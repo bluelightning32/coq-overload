@@ -1,4 +1,4 @@
 #!/bin/bash
 
-coq_makefile -o CoqMakefile grad3.v Universe.v AnnotatedType.v Grade.v LargeEq.v LargeHurkens.v Context.v
+coq_makefile -o CoqMakefile -f _CoqProject
 make -f CoqMakefile
