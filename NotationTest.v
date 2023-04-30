@@ -230,15 +230,153 @@ Module TypeClasses3.
   Definition id_swap {A B: Type@{Set}} (s: A _+_ B) : B _+_ A :=
   small_id _ (swap_sum_type s).
 
-  Theorem nat_add_stays: forall (a b: nat), a _+_ b = a + b.
+  (* Passes *)
+  Theorem cbn_keeps_notation: forall (a b: nat), a _+_ b = a _+_ b.
   Proof.
     intros.
-    Fail (progress cbn).
+    (* Ideally this would fail. *)
+    Fail progress cbn.
+    reflexivity.
+  Qed.
+
+  (* Half passes. The match is simplified, but without restoring the resulting notation. *)
+  Theorem cbn_simplifies_addition: forall (a b: nat), S a _+_ b = S (a _+_ b).
+  Proof.
+    intros.
+    cbn.
     reflexivity.
   Qed.
 End TypeClasses3.
 
+(* Fails cbn_keeps_notation. *)
 Module CanonicalStructures.
+  Declare Scope operation_scope.
+  Delimit Scope operation_scope with operation.
+  Open Scope operation_scope.
+
+  Module AddOperation.
+    Structure Op (B: Type) (C: Type) := {
+      A: Type;
+      #[canonical=no] add: A -> B -> C;
+    }.
+  End AddOperation.
+
+  Definition op {B C: Type} {o: AddOperation.Op B C} := o.(AddOperation.add B C).
+
+  Infix "_+_" := op (at level 50, left associativity) : operation_scope.
+
+  Module NatAddOperation.
+    Structure Op := {
+      B: Type;
+      #[canonical=no] C: Type;
+      #[canonical=no] add: nat -> B -> C;
+    }.
+  End NatAddOperation.
+  Canonical Structure nat_add (op2: NatAddOperation.Op): AddOperation.Op op2.(NatAddOperation.B) op2.(NatAddOperation.C) := {|
+    AddOperation.add:= op2.(NatAddOperation.add);
+  |}.
+
+  Canonical Structure nat_nat_add: NatAddOperation.Op := {|
+    NatAddOperation.add:= Nat.add;
+  |}.
+
+  Module ZAddOperation.
+    Structure Op := {
+      B: Type;
+      #[canonical=no] C: Type;
+      #[canonical=no] add: Z -> B -> C;
+    }.
+  End ZAddOperation.
+
+  Canonical Structure Z_add (op2: ZAddOperation.Op): AddOperation.Op op2.(ZAddOperation.B) op2.(ZAddOperation.C) := {|
+    AddOperation.add:= op2.(ZAddOperation.add);
+  |}.
+
+  Canonical Structure Z_Z_add: ZAddOperation.Op := {|
+    ZAddOperation.add:= Z.add;
+  |}.
+
+  Canonical Structure Z_nat_add: ZAddOperation.Op := {|
+    ZAddOperation.add a b := (a + Z.of_nat b)%Z;
+  |}.
+
+  Module TypeAddOperation.
+    Universe B.
+    Universe C.
+    #[universes(polymorphic)]
+    Structure Op@{U} := {
+      B: Type@{B};
+      #[canonical=no] C: Type@{C};
+      #[canonical=no] add: Type@{U} -> B -> C;
+    }.
+  End TypeAddOperation.
+
+  #[universes(polymorphic)]
+  Canonical Structure type_add@{U} (op2: TypeAddOperation.Op@{U}): AddOperation.Op op2.(TypeAddOperation.B) op2.(TypeAddOperation.C) := {|
+    AddOperation.A := Type@{U};
+    AddOperation.add:= op2.(TypeAddOperation.add);
+  |}.
+
+  Canonical Structure set_add (op2: TypeAddOperation.Op@{Set}): AddOperation.Op op2.(TypeAddOperation.B) op2.(TypeAddOperation.C) := {|
+    AddOperation.A := Type@{Set};
+    AddOperation.add:= op2.(TypeAddOperation.add);
+  |}.
+
+  #[universes(polymorphic)]
+  Canonical Structure type_type_add@{U}: TypeAddOperation.Op@{U} := {|
+    TypeAddOperation.B := Type@{U};
+    TypeAddOperation.C := Type@{U};
+    TypeAddOperation.add a b:= (a + b)%type;
+  |}.
+
+  Canonical Structure set_set_add@{U}: TypeAddOperation.Op@{Set} := {|
+    TypeAddOperation.B := Set;
+    TypeAddOperation.C := Set;
+    TypeAddOperation.add a b:= (a + b)%type;
+  |}.
+
+  Definition add_nats (a b: nat) := a _+_ b.
+
+  Definition add_ints (a b: Z) := a _+_ b.
+
+  Definition add_int_nat (a: Z) (b: nat) := a _+_ b.
+
+  Definition list_of_n_sum_types (A B: Type) (n: nat) : list Type :=
+    repeat (A _+_ B)%type n.
+
+  #[universes(polymorphic)]
+  Definition swap_sum_type@{U} {A B: Type@{U}} (s: A _+_ B) : B _+_ A :=
+  match s with
+  | inl a => inr a
+  | inr b => inl b
+  end.
+
+  Definition small_id (T: Type@{Set}) (v: T): T := v.
+
+  Definition id_swap {A B: Type@{Set}} (s: A _+_ B) : B _+_ A :=
+  small_id _ (swap_sum_type s).
+
+  (* Fails this test because the operator was removed by cbn. *)
+  Theorem cbn_keeps_notation: forall (a b: nat), a _+_ b = a _+_ b.
+  Proof.
+    intros.
+    (* Ideally this would fail. *)
+    progress cbn.
+    reflexivity.
+  Qed.
+
+  (* Fails *)
+  Theorem cbn_simplifies_addition: forall (a b: nat), S a _+_ b = S (a _+_ b).
+  Proof.
+    intros.
+    (* Ideally this would pass. *)
+    progress cbn.
+    reflexivity.
+  Qed.
+End CanonicalStructures.
+
+(* Fails cbn_simplifies_addition *)
+Module CanonicalStructuresSimplNever.
   Declare Scope operation_scope.
   Delimit Scope operation_scope with operation.
   Open Scope operation_scope.
@@ -357,12 +495,14 @@ Module CanonicalStructures.
     reflexivity.
   Qed.
 
-  (* Passes *)
+  (* Fails *)
   Theorem cbn_simplifies_addition: forall (a b: nat), S a _+_ b = S (a _+_ b).
   Proof.
     intros.
     (* Ideally this would pass. *)
     Fail progress cbn.
+    (* simpl still works. *)
+    progress simpl.
     reflexivity.
   Qed.
-End CanonicalStructures.
+End CanonicalStructuresSimplNever.
