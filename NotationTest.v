@@ -28,14 +28,14 @@ Module TypeClasses1.
     result: Type;
     add: A -> B -> result;
   }.
-  Infix "_+_" := add (at level 50, left associativity) : operation_scope.
+  Infix "[+]" := add (at level 50, left associativity) : operation_scope.
 
   Universe OperationInput.
   #[universes(polymorphic)]
   Class TypeAddOperation@{Output} (A: Type@{OperationInput}) (B: Type@{OperationInput}) := {
     add_type: A -> B -> Type@{Output};
   }.
-  Infix "_+_" := add_type (at level 50, left associativity) : type_scope.
+  Infix "[+]" := add_type (at level 50, left associativity) : type_scope.
 
   #[export]
   Instance nat_add: AddOperation nat nat := {|
@@ -61,17 +61,17 @@ Module TypeClasses1.
     add_type (A: Type@{U}) (B: Type@{U}) := (A + B)%type;
   |}.
 
-  Definition add_nats (a b: nat) := a _+_ b.
+  Definition add_nats (a b: nat) := a [+] b.
 
-  Definition add_ints (a b: Z) := a _+_ b.
+  Definition add_ints (a b: Z) := a [+] b.
 
-  Definition add_int_nat (a: Z) (b: nat) := a _+_ b.
+  Definition add_int_nat (a: Z) (b: nat) := a [+] b.
 
   Definition list_of_n_sum_types (A B: Type) (n: nat) : list Type :=
-    repeat (A _+_ B)%type n.
+    repeat (A [+] B)%type n.
 
   #[universes(polymorphic)]
-  Definition swap_sum_type@{U} {A B: Type@{U}} (s: A _+_ B) : B _+_ A :=
+  Definition swap_sum_type@{U} {A B: Type@{U}} (s: A [+] B) : B [+] A :=
   match s with
   | inl a => inr a
   | inr b => inl b
@@ -79,11 +79,11 @@ Module TypeClasses1.
 
   Definition small_id (T: Type@{Set}) (v: T): T := v.
 
-  Definition id_swap {A B: Type@{Set}} (s: A _+_ B) : B _+_ A :=
+  Definition id_swap {A B: Type@{Set}} (s: A [+] B) : B [+] A :=
   small_id _ (swap_sum_type s).
 
   (* Fails this test because the operator was removed by cbn. *)
-  Theorem cbn_keeps_notation: forall (a b: nat), a _+_ b = a _+_ b.
+  Theorem cbn_keeps_notation: forall (a b: nat), a [+] b = a [+] b.
   Proof.
     intros.
     (* Ideally this would fail. *)
@@ -92,7 +92,7 @@ Module TypeClasses1.
   Qed.
 
   (* Passes *)
-  Theorem cbn_simplifies_addition: forall (a b: nat), S a _+_ b = S (a _+_ b).
+  Theorem cbn_simplifies_addition: forall (a b: nat), S a [+] b = S (a [+] b).
   Proof.
     intros.
     (* Ideally this would pass. *)
@@ -110,14 +110,14 @@ Module TypeClasses2.
   Class AddOperation (A B C: Type) := {
     add: A -> B -> C;
   }.
-  Infix "_+_" := add (at level 50, left associativity) : operation_scope.
+  Infix "[+]" := add (at level 50, left associativity) : operation_scope.
 
   Universe OperationInput.
   #[universes(polymorphic)]
   Class TypeAddOperation@{Output} (A: Type@{OperationInput}) (B: Type@{OperationInput}) := {
     add_type: A -> B -> Type@{Output};
   }.
-  Infix "_+_" := add_type (at level 50, left associativity) : type_scope.
+  Infix "[+]" := add_type (at level 50, left associativity) : type_scope.
 
   #[export]
   Instance nat_add: AddOperation nat nat nat := {|
@@ -140,17 +140,17 @@ Module TypeClasses2.
     add_type (A: Type@{U}) (B: Type@{U}) := (A + B)%type;
   |}.
 
-  Definition add_nats (a b: nat) := a _+_ b.
+  Definition add_nats (a b: nat) := a [+] b.
 
-  Definition add_ints (a b: Z) := a _+_ b.
+  Definition add_ints (a b: Z) := a [+] b.
 
-  Definition add_int_nat (a: Z) (b: nat) := a _+_ b.
+  Definition add_int_nat (a: Z) (b: nat) := a [+] b.
 
   Definition list_of_n_sum_types (A B: Type) (n: nat) : list Type :=
-    repeat (A _+_ B)%type n.
+    repeat (A [+] B)%type n.
 
   #[universes(polymorphic)]
-  Definition swap_sum_type@{U} {A B: Type@{U}} (s: A _+_ B) : B _+_ A :=
+  Definition swap_sum_type@{U} {A B: Type@{U}} (s: A [+] B) : B [+] A :=
   match s with
   | inl a => inr a
   | inr b => inl b
@@ -158,11 +158,11 @@ Module TypeClasses2.
 
   Definition small_id (T: Type@{Set}) (v: T): T := v.
 
-  Definition id_swap {A B: Type@{Set}} (s: A _+_ B) : B _+_ A :=
+  Definition id_swap {A B: Type@{Set}} (s: A [+] B) : B [+] A :=
   small_id _ (swap_sum_type s).
 
   (* Fails this test because the operator was removed by cbn. *)
-  Theorem cbn_keeps_notation: forall (a b: nat), a _+_ b = a _+_ b.
+  Theorem cbn_keeps_notation: forall (a b: nat), a [+] b = a [+] b.
   Proof.
     intros.
     (* Ideally this would fail. *)
@@ -171,7 +171,7 @@ Module TypeClasses2.
   Qed.
 
   (* Passes *)
-  Theorem cbn_simplifies_addition: forall (a b: nat), S a _+_ b = S (a _+_ b).
+  Theorem cbn_simplifies_addition: forall (a b: nat), S a [+] b = S (a [+] b).
   Proof.
     intros.
     (* Ideally this would pass. *)
@@ -187,13 +187,13 @@ Module TypeClasses3.
   Open Scope operation_scope.
 
   Class AddOperation (A B C: Type) := add: A -> B -> C.
-  Infix "_+_" := add (at level 50, left associativity) : operation_scope.
+  Infix "[+]" := add (at level 50, left associativity) : operation_scope.
 
   Universe OperationInput.
   #[universes(polymorphic)]
   Class TypeAddOperation@{Output} (A: Type@{OperationInput}) (B: Type@{OperationInput}) :=
   add_type: A -> B -> Type@{Output}.
-  Infix "_+_" := add_type (at level 50, left associativity) : type_scope.
+  Infix "[+]" := add_type (at level 50, left associativity) : type_scope.
 
   #[export]
   Instance nat_add: AddOperation nat nat nat := fun a b => (a + b)%nat.
@@ -209,17 +209,17 @@ Module TypeClasses3.
   Instance type_add@{U}: TypeAddOperation@{U} Type@{U} Type@{U} :=
   fun (A: Type@{U}) (B: Type@{U}) => (A + B)%type.
 
-  Definition add_nats (a b: nat) := a _+_ b.
+  Definition add_nats (a b: nat) := a [+] b.
 
-  Definition add_ints (a b: Z) := a _+_ b.
+  Definition add_ints (a b: Z) := a [+] b.
 
-  Definition add_int_nat (a: Z) (b: nat) := a _+_ b.
+  Definition add_int_nat (a: Z) (b: nat) := a [+] b.
 
   Definition list_of_n_sum_types (A B: Type) (n: nat) : list Type :=
-    repeat (A _+_ B)%type n.
+    repeat (A [+] B)%type n.
 
   #[universes(polymorphic)]
-  Definition swap_sum_type@{U} {A B: Type@{U}} (s: A _+_ B) : B _+_ A :=
+  Definition swap_sum_type@{U} {A B: Type@{U}} (s: A [+] B) : B [+] A :=
   match s with
   | inl a => inr a
   | inr b => inl b
@@ -227,11 +227,11 @@ Module TypeClasses3.
 
   Definition small_id (T: Type@{Set}) (v: T): T := v.
 
-  Definition id_swap {A B: Type@{Set}} (s: A _+_ B) : B _+_ A :=
+  Definition id_swap {A B: Type@{Set}} (s: A [+] B) : B [+] A :=
   small_id _ (swap_sum_type s).
 
   (* Passes *)
-  Theorem cbn_keeps_notation: forall (a b: nat), a _+_ b = a _+_ b.
+  Theorem cbn_keeps_notation: forall (a b: nat), a [+] b = a [+] b.
   Proof.
     intros.
     (* Ideally this would fail. *)
@@ -240,7 +240,7 @@ Module TypeClasses3.
   Qed.
 
   (* Half passes. The match is simplified, but without restoring the resulting notation. *)
-  Theorem cbn_simplifies_addition: forall (a b: nat), S a _+_ b = S (a _+_ b).
+  Theorem cbn_simplifies_addition: forall (a b: nat), S a [+] b = S (a [+] b).
   Proof.
     intros.
     cbn.
@@ -263,7 +263,7 @@ Module CanonicalStructures.
 
   Definition op {B C: Type} {o: AddOperation.Op B C} := o.(AddOperation.add B C).
 
-  Infix "_+_" := op (at level 50, left associativity) : operation_scope.
+  Infix "[+]" := op (at level 50, left associativity) : operation_scope.
 
   Module NatAddOperation.
     Structure Op := {
@@ -335,17 +335,17 @@ Module CanonicalStructures.
     TypeAddOperation.add a b:= (a + b)%type;
   |}.
 
-  Definition add_nats (a b: nat) := a _+_ b.
+  Definition add_nats (a b: nat) := a [+] b.
 
-  Definition add_ints (a b: Z) := a _+_ b.
+  Definition add_ints (a b: Z) := a [+] b.
 
-  Definition add_int_nat (a: Z) (b: nat) := a _+_ b.
+  Definition add_int_nat (a: Z) (b: nat) := a [+] b.
 
   Definition list_of_n_sum_types (A B: Type) (n: nat) : list Type :=
-    repeat (A _+_ B)%type n.
+    repeat (A [+] B)%type n.
 
   #[universes(polymorphic)]
-  Definition swap_sum_type@{U} {A B: Type@{U}} (s: A _+_ B) : B _+_ A :=
+  Definition swap_sum_type@{U} {A B: Type@{U}} (s: A [+] B) : B [+] A :=
   match s with
   | inl a => inr a
   | inr b => inl b
@@ -353,11 +353,11 @@ Module CanonicalStructures.
 
   Definition small_id (T: Type@{Set}) (v: T): T := v.
 
-  Definition id_swap {A B: Type@{Set}} (s: A _+_ B) : B _+_ A :=
+  Definition id_swap {A B: Type@{Set}} (s: A [+] B) : B [+] A :=
   small_id _ (swap_sum_type s).
 
   (* Fails this test because the operator was removed by cbn. *)
-  Theorem cbn_keeps_notation: forall (a b: nat), a _+_ b = a _+_ b.
+  Theorem cbn_keeps_notation: forall (a b: nat), a [+] b = a [+] b.
   Proof.
     intros.
     (* Ideally this would fail. *)
@@ -366,7 +366,7 @@ Module CanonicalStructures.
   Qed.
 
   (* Fails *)
-  Theorem cbn_simplifies_addition: forall (a b: nat), S a _+_ b = S (a _+_ b).
+  Theorem cbn_simplifies_addition: forall (a b: nat), S a [+] b = S (a [+] b).
   Proof.
     intros.
     (* Ideally this would pass. *)
@@ -390,7 +390,7 @@ Module CanonicalStructuresSimplNever.
 
   Definition op {B C: Type} {o: AddOperation.Op B C} := o.(AddOperation.add B C).
 
-  Infix "_+_" := op (at level 50, left associativity) : operation_scope.
+  Infix "[+]" := op (at level 50, left associativity) : operation_scope.
 
   Module NatAddOperation.
     Structure Op := {
@@ -465,17 +465,17 @@ Module CanonicalStructuresSimplNever.
     TypeAddOperation.add a b:= (a + b)%type;
   |}.
 
-  Definition add_nats (a b: nat) := a _+_ b.
+  Definition add_nats (a b: nat) := a [+] b.
 
-  Definition add_ints (a b: Z) := a _+_ b.
+  Definition add_ints (a b: Z) := a [+] b.
 
-  Definition add_int_nat (a: Z) (b: nat) := a _+_ b.
+  Definition add_int_nat (a: Z) (b: nat) := a [+] b.
 
   Definition list_of_n_sum_types (A B: Type) (n: nat) : list Type :=
-    repeat (A _+_ B)%type n.
+    repeat (A [+] B)%type n.
 
   #[universes(polymorphic)]
-  Definition swap_sum_type@{U} {A B: Type@{U}} (s: A _+_ B) : B _+_ A :=
+  Definition swap_sum_type@{U} {A B: Type@{U}} (s: A [+] B) : B [+] A :=
   match s with
   | inl a => inr a
   | inr b => inl b
@@ -483,11 +483,11 @@ Module CanonicalStructuresSimplNever.
 
   Definition small_id (T: Type@{Set}) (v: T): T := v.
 
-  Definition id_swap {A B: Type@{Set}} (s: A _+_ B) : B _+_ A :=
+  Definition id_swap {A B: Type@{Set}} (s: A [+] B) : B [+] A :=
   small_id _ (swap_sum_type s).
 
   (* Passes *)
-  Theorem cbn_keeps_notation: forall (a b: nat), a _+_ b = a _+_ b.
+  Theorem cbn_keeps_notation: forall (a b: nat), a [+] b = a [+] b.
   Proof.
     intros.
     (* Ideally this would fail. *)
@@ -496,7 +496,7 @@ Module CanonicalStructuresSimplNever.
   Qed.
 
   (* Fails *)
-  Theorem cbn_simplifies_addition: forall (a b: nat), S a _+_ b = S (a _+_ b).
+  Theorem cbn_simplifies_addition: forall (a b: nat), S a [+] b = S (a [+] b).
   Proof.
     intros.
     (* Ideally this would pass. *)
