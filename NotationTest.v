@@ -9,17 +9,17 @@ Module NativeNotations.
   Delimit Scope nat_compare_scope with nat_compare.
   Open Scope nat_compare_scope.
 
-  Infix "[<=]" := Nat.leb (at level 70, no associativity) : nat_compare_scope.
+  Infix "<==" := Nat.leb (at level 70, no associativity) : nat_compare_scope.
 
   Declare Scope Z_compare_scope.
   Delimit Scope Z_compare_scope with Z_compare.
   Open Scope Z_compare_scope.
 
-  Infix "[<=]" := Z.leb (at level 70, no associativity) : Z_compare_scope.
+  Infix "<==" := Z.leb (at level 70, no associativity) : Z_compare_scope.
 
-  Definition compare_nats (a b: nat) := (a [<=] b)%nat_compare.
+  Definition compare_nats (a b: nat) := (a <== b)%nat_compare.
 
-  Definition compare_ints (a b: Z) := a [<=] b.
+  Definition compare_ints (a b: Z) := a <== b.
 End NativeNotations.
 
 (* Fails cbn_keeps_notation, relations_reflexive, and crelations_reflexive. *)
@@ -32,7 +32,7 @@ Module TypeClasses1.
     result: Type;
     le: A -> B -> result;
   }.
-  Infix "[<=]" := le (at level 70, no associativity) : operation_scope.
+  Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   #[export]
   Instance nat_le: LEOperation nat nat := {|
@@ -67,26 +67,26 @@ Module TypeClasses1.
     le R S := CRelationClasses.subrelation R S;
   |}.
 
-  Definition compare_nats (a b: nat) := a [<=] b.
+  Definition compare_nats (a b: nat) := a <== b.
 
-  Definition compare_ints (a b: Z) := a [<=] b.
+  Definition compare_ints (a b: Z) := a <== b.
 
-  Definition compare_Z_nat (a: Z) (b: nat) := a [<=] b.
+  Definition compare_Z_nat (a: Z) (b: nat) := a <== b.
 
   Definition compare_relations (A: Type) (R S: relation A) :=
-    R [<=] S.
+    R <== S.
 
   Definition compare_crelations (A: Type) (R S: crelation A) :=
-    R [<=] S.
+    R <== S.
 
   Fail Definition relations_reflexive (A: Type)
-  : forall (R R: relation A), R [<=] R.
+  : forall (R R: relation A), R <== R.
 
   Fail Definition crelations_reflexive (A: Type)
-  : forall (R R: crelation A), R [<=] R.
+  : forall (R R: crelation A), R <== R.
 
   (* Fails this test because the operator was removed by cbn. *)
-  Theorem cbn_keeps_notation: forall (a b: nat), (a [<=] b) = (a [<=] b).
+  Theorem cbn_keeps_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
     (* Ideally this would fail. *)
@@ -95,7 +95,7 @@ Module TypeClasses1.
   Qed.
 
   (* Passes *)
-  Theorem cbn_simplifies_leb: forall (a b: nat), (S a [<=] S b) = (a [<=] b).
+  Theorem cbn_simplifies_leb: forall (a b: nat), (S a <== S b) = (a <== b).
   Proof.
     intros.
     progress cbn.
@@ -112,7 +112,7 @@ Module TypeClasses2.
   Class LEOperation (A B C: Type) := {
     le: A -> B -> C;
   }.
-  Infix "[<=]" := le (at level 70, no associativity) : operation_scope.
+  Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   #[export]
   Instance nat_le: LEOperation nat nat bool := {|
@@ -146,30 +146,30 @@ Module TypeClasses2.
     (fun (R S: crelation@{Input Output} A) =>
        CRelationClasses.subrelation@{Input Output Output} R S).
 
-  Definition compare_nats (a b: nat) := a [<=] b.
+  Definition compare_nats (a b: nat) := a <== b.
 
-  Definition compare_ints (a b: Z) := a [<=] b.
+  Definition compare_ints (a b: Z) := a <== b.
 
-  Definition compare_Z_nat (a: Z) (b: nat) := a [<=] b.
+  Definition compare_Z_nat (a: Z) (b: nat) := a <== b.
 
   Definition compare_relations (A: Type) (R S: relation A) :=
-    R [<=] S.
+    R <== S.
 
   Definition compare_crelations (A: Type) (R S: crelation A) :=
-    R [<=] S.
+    R <== S.
 
   Fail Definition relations_reflexive (A: Type)
-  : forall (R R: relation A), R [<=] R.
+  : forall (R R: relation A), R <== R.
 
   Definition crelations_reflexive (A: Type)
-  : forall (R: crelation A), R [<=] R.
+  : forall (R: crelation A), R <== R.
   Proof.
     intros.
     reflexivity.
   Qed.
 
   (* Fails this test because the operator was removed by cbn. *)
-  Theorem cbn_keeps_notation: forall (a b: nat), (a [<=] b) = (a [<=] b).
+  Theorem cbn_keeps_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
     (* Ideally this would fail. *)
@@ -178,7 +178,7 @@ Module TypeClasses2.
   Qed.
 
   (* Passes *)
-  Theorem cbn_simplifies_leb: forall (a b: nat), (S a [<=] S b) = (a [<=] b).
+  Theorem cbn_simplifies_leb: forall (a b: nat), (S a <== S b) = (a <== b).
   Proof.
     intros.
     progress cbn.
@@ -193,7 +193,7 @@ Module TypeClasses3.
   Open Scope operation_scope.
 
   Class LEOperation (A B C: Type) := le: A -> B -> C.
-  Infix "[<=]" := le (at level 70, no associativity) : operation_scope.
+  Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   #[export]
   Instance nat_le: LEOperation nat nat bool := fun a b => (a <=? b)%nat.
@@ -218,30 +218,30 @@ Module TypeClasses3.
   fun (R S: crelation@{Input Output} A) =>
     CRelationClasses.subrelation@{Input Output Output} R S.
 
-  Definition compare_nats (a b: nat) := a [<=] b.
+  Definition compare_nats (a b: nat) := a <== b.
 
-  Definition compare_ints (a b: Z) := a [<=] b.
+  Definition compare_ints (a b: Z) := a <== b.
 
-  Definition compare_Z_nat (a: Z) (b: nat) := a [<=] b.
+  Definition compare_Z_nat (a: Z) (b: nat) := a <== b.
 
   Definition compare_relations (A: Type) (R S: relation A) :=
-    R [<=] S.
+    R <== S.
 
   Definition compare_crelations (A: Type) (R S: crelation A) :=
-    R [<=] S.
+    R <== S.
 
   Fail Definition relations_reflexive (A: Type)
-  : forall (R R: relation A), R [<=] R.
+  : forall (R R: relation A), R <== R.
 
   Definition crelations_reflexive (A: Type)
-  : forall (R: crelation A), R [<=] R.
+  : forall (R: crelation A), R <== R.
   Proof.
     intros.
     reflexivity.
   Qed.
 
   (* Passes *)
-  Theorem cbn_keeps_notation: forall (a b: nat), (a [<=] b) = (a [<=] b).
+  Theorem cbn_keeps_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
     Fail progress cbn.
@@ -249,7 +249,7 @@ Module TypeClasses3.
   Qed.
 
   (* Passes *)
-  Theorem cbn_simplifies_leb: forall (a b: nat), (S a [<=] S b) = (a [<=] b).
+  Theorem cbn_simplifies_leb: forall (a b: nat), (S a <== S b) = (a <== b).
   Proof.
     intros.
     progress cbn.
@@ -270,7 +270,7 @@ Module TypeClasses4.
   Arguments le_result : simpl never.
 
   Class LEOperation (A B: Type) (C: LEOperationResult A B) := le: A -> B -> @le_result A B C.
-  Infix "[<=]" := le (at level 70, no associativity) : operation_scope.
+  Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   #[export]
   Instance nat_le_result: LEOperationResult nat nat := Build_LEOperationResult _ _ bool.
@@ -315,25 +315,25 @@ Module TypeClasses4.
   fun (R S: crelation@{Input Output} A) =>
     CRelationClasses.subrelation@{Input Output Output} R S.
 
-  Definition compare_nats (a b: nat) := a [<=] b.
+  Definition compare_nats (a b: nat) := a <== b.
 
-  Definition compare_ints (a b: Z) := a [<=] b.
+  Definition compare_ints (a b: Z) := a <== b.
 
-  Definition compare_Z_nat (a: Z) (b: nat) := a [<=] b.
+  Definition compare_Z_nat (a: Z) (b: nat) := a <== b.
 
   Definition compare_relations (A: Type) (R S: relation A) :=
-    R [<=] S.
+    R <== S.
 
   Definition compare_crelations (A: Type) (R S: crelation A) :=
-    R [<=] S.
+    R <== S.
 
   Fail Definition relations_reflexive (A: Type)
-  : forall (R R: relation A), R [<=] R.
+  : forall (R R: relation A), R <== R.
 
   Fail Definition crelations_reflexive (A: Type)
-  : forall (R: crelation A), R [<=] R.
+  : forall (R: crelation A), R <== R.
 
-  Theorem cbn_keeps_notation: forall (a b: nat), (a [<=] b) = (a [<=] b).
+  Theorem cbn_keeps_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
     Fail progress cbn.
@@ -341,7 +341,7 @@ Module TypeClasses4.
   Qed.
 
   (* Passes *)
-  Theorem cbn_simplifies_leb: forall (a b: nat), (S a [<=] S b) = (a [<=] b).
+  Theorem cbn_simplifies_leb: forall (a b: nat), (S a <== S b) = (a <== b).
   Proof.
     intros.
     progress cbn.
@@ -376,7 +376,7 @@ Module TypeClassesCanonicalSignature.
 
   Class LEOperation (r: LESignature) := le: r.(LESignature.A) -> r.(LESignature.B) -> r.(LESignature.C).
 
-  Infix "[<=]" := le (at level 70, no associativity) : operation_scope.
+  Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   #[export]
   Instance nat_le: LEOperation (signature nat nat bool) :=
@@ -421,26 +421,26 @@ Module TypeClassesCanonicalSignature.
   fun (R S: crelation@{Input Output} A) =>
     CRelationClasses.subrelation@{Input Output Output} R S.
 
-  Definition compare_nats (a b: nat) := a [<=] b.
+  Definition compare_nats (a b: nat) := a <== b.
 
-  Definition compare_ints (a b: Z) := a [<=] b.
+  Definition compare_ints (a b: Z) := a <== b.
 
-  Definition compare_Z_nat (a: Z) (b: nat) := a [<=] b.
+  Definition compare_Z_nat (a: Z) (b: nat) := a <== b.
 
   Definition compare_relations (A: Type) (R S: relation A) :=
-    R [<=] S.
+    R <== S.
 
   Definition compare_crelations (A: Type) (R S: crelation A) :=
-    R [<=] S.
+    R <== S.
 
   Definition relations_reflexive (A: Type)
-  : forall (R: relation A), R [<=] R := fun R x y Rxy => Rxy.
+  : forall (R: relation A), R <== R := fun R x y Rxy => Rxy.
 
   Definition crelations_reflexive (A: Type)
-  : forall (R: crelation A), R [<=] R := fun R x y Rxy => Rxy.
+  : forall (R: crelation A), R <== R := fun R x y Rxy => Rxy.
 
   (* Passes *)
-  Theorem cbn_keeps_notation: forall (a b: nat), (a [<=] b) = (a [<=] b).
+  Theorem cbn_keeps_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
     Fail progress cbn.
@@ -448,7 +448,7 @@ Module TypeClassesCanonicalSignature.
   Qed.
 
   (* Passes *)
-  Theorem cbn_simplifies_leb: forall (a b: nat), (S a [<=] S b) = (a [<=] b).
+  Theorem cbn_simplifies_leb: forall (a b: nat), (S a <== S b) = (a <== b).
   Proof.
     intros.
     progress cbn.
@@ -472,7 +472,7 @@ Module CanonicalStructures.
 
   Definition le {B C: Type} {o: LEOperation B C} := o.(LEOperation.op B C).
 
-  Infix "[<=]" := le (at level 70, no associativity) : operation_scope.
+  Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   Module NatLEOperation.
     Structure NatLEOperation := {
@@ -573,26 +573,26 @@ Module CanonicalStructures.
     CRelationLEOperation.op R S := CRelationClasses.subrelation@{Input Output1 Output2} R S;
   |}.
 
-  Definition compare_nats (a b: nat) := a [<=] b.
+  Definition compare_nats (a b: nat) := a <== b.
 
-  Definition compare_ints (a b: Z) := a [<=] b.
+  Definition compare_ints (a b: Z) := a <== b.
 
-  Definition compare_Z_nat (a: Z) (b: nat) := a [<=] b.
+  Definition compare_Z_nat (a: Z) (b: nat) := a <== b.
 
   Definition compare_relations (A: Type) (R S: relation A) :=
-    R [<=] S.
+    R <== S.
 
   Definition compare_crelations (A: Type) (R S: crelation A) :=
-    R [<=] S.
+    R <== S.
 
   Definition relations_reflexive (A: Type)
-  : forall (R: relation A), R [<=] R := fun R x y Rxy => Rxy.
+  : forall (R: relation A), R <== R := fun R x y Rxy => Rxy.
 
   Definition crelations_reflexive (A: Type)
-  : forall (R: crelation A), R [<=] R := fun R x y Rxy => Rxy.
+  : forall (R: crelation A), R <== R := fun R x y Rxy => Rxy.
 
   (* Fails *)
-  Theorem cbn_keeps_notation: forall (a b: nat), (a [<=] b) = (a [<=] b).
+  Theorem cbn_keeps_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
     (* Ideally this would not make progress. *)
@@ -601,7 +601,7 @@ Module CanonicalStructures.
   Qed.
 
   (* Passes *)
-  Theorem cbn_simplifies_leb: forall (a b: nat), (S a [<=] S b) = (a [<=] b).
+  Theorem cbn_simplifies_leb: forall (a b: nat), (S a <== S b) = (a <== b).
   Proof.
     intros.
     progress cbn.
@@ -625,7 +625,7 @@ Module CanonicalStructuresSimplNever.
 
   Definition le {B C: Type} {o: LEOperation B C} := o.(LEOperation.op B C).
 
-  Infix "[<=]" := le (at level 70, no associativity) : operation_scope.
+  Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   Module NatLEOperation.
     Structure NatLEOperation := {
@@ -728,26 +728,26 @@ Module CanonicalStructuresSimplNever.
     CRelationLEOperation.op R S := CRelationClasses.subrelation@{Input Output1 Output2} R S;
   |}.
 
-  Definition compare_nats (a b: nat) := a [<=] b.
+  Definition compare_nats (a b: nat) := a <== b.
 
-  Definition compare_ints (a b: Z) := a [<=] b.
+  Definition compare_ints (a b: Z) := a <== b.
 
-  Definition compare_Z_nat (a: Z) (b: nat) := a [<=] b.
+  Definition compare_Z_nat (a: Z) (b: nat) := a <== b.
 
   Definition compare_relations (A: Type) (R S: relation A) :=
-    R [<=] S.
+    R <== S.
 
   Definition compare_crelations (A: Type) (R S: crelation A) :=
-    R [<=] S.
+    R <== S.
 
   Definition relations_reflexive (A: Type)
-  : forall (R: relation A), R [<=] R := fun R x y Rxy => Rxy.
+  : forall (R: relation A), R <== R := fun R x y Rxy => Rxy.
 
   Definition crelations_reflexive (A: Type)
-  : forall (R: crelation A), R [<=] R := fun R x y Rxy => Rxy.
+  : forall (R: crelation A), R <== R := fun R x y Rxy => Rxy.
 
   (* Passes *)
-  Theorem cbn_keeps_notation: forall (a b: nat), (a [<=] b) = (a [<=] b).
+  Theorem cbn_keeps_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
     Fail progress cbn.
@@ -755,7 +755,7 @@ Module CanonicalStructuresSimplNever.
   Qed.
 
   (* Fails *)
-  Theorem cbn_simplifies_leb: forall (a b: nat), (S a [<=] S b) = (a [<=] b).
+  Theorem cbn_simplifies_leb: forall (a b: nat), (S a <== S b) = (a <== b).
   Proof.
     intros.
     (* Ideally this would make progres. *)
