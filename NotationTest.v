@@ -9,13 +9,13 @@ Module NativeNotations.
   Delimit Scope nat_compare_scope with nat_compare.
   Open Scope nat_compare_scope.
 
-  Infix "<==" := Nat.leb (at level 70, no associativity) : nat_compare_scope.
+  Infix "<==" := Nat.le (at level 70, no associativity) : nat_compare_scope.
 
   Declare Scope Z_compare_scope.
   Delimit Scope Z_compare_scope with Z_compare.
   Open Scope Z_compare_scope.
 
-  Infix "<==" := Z.leb (at level 70, no associativity) : Z_compare_scope.
+  Infix "<==" := Z.le (at level 70, no associativity) : Z_compare_scope.
 
   Definition compare_nats (a b: nat) := (a <== b)%nat_compare.
 
@@ -36,20 +36,20 @@ Module TypeClasses1.
 
   #[export]
   Instance nat_le: LEOperation nat nat := {|
-    result := bool;
-    le a b := (a <=? b)%nat;
+    result := Prop;
+    le := Nat.le;
   |}.
 
   #[export]
   Instance Z_le: LEOperation Z Z := {|
-    result := bool;
-    le a b := (a <=? b)%Z;
+    result := Prop;
+    le := Z.le;
   |}.
 
   #[export]
   Instance Z_nat_le: LEOperation Z nat := {|
-    result:= bool;
-    le a b := (a <=? Z.of_nat b)%Z;
+    result:= Prop;
+    le a b := (a <= Z.of_nat b)%Z;
   |}.
 
   #[export]
@@ -93,14 +93,6 @@ Module TypeClasses1.
     progress cbn.
     reflexivity.
   Qed.
-
-  (* Passes *)
-  Theorem cbn_simplifies_leb: forall (a b: nat), (S a <== S b) = (a <== b).
-  Proof.
-    intros.
-    progress cbn.
-    reflexivity.
-  Qed.
 End TypeClasses1.
 
 (* Fails cbn_keeps_notation and relations_reflexive. *)
@@ -115,18 +107,18 @@ Module TypeClasses2.
   Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   #[export]
-  Instance nat_le: LEOperation nat nat bool := {|
-    le a b := (a <=? b)%nat;
+  Instance nat_le: LEOperation nat nat Prop := {|
+    le := Nat.le;
   |}.
 
   #[export]
-  Instance Z_le: LEOperation Z Z bool := {|
-    le a b := (a <=? b)%Z;
+  Instance Z_le: LEOperation Z Z Prop := {|
+    le := Z.le;
   |}.
 
   #[export]
-  Instance Z_nat_le: LEOperation Z nat bool := {|
-    le a b := (a <=? Z.of_nat b)%Z;
+  Instance Z_nat_le: LEOperation Z nat Prop := {|
+    le a b := (a <= Z.of_nat b)%Z;
   |}.
 
   #[export]
@@ -176,14 +168,6 @@ Module TypeClasses2.
     progress cbn.
     reflexivity.
   Qed.
-
-  (* Passes *)
-  Theorem cbn_simplifies_leb: forall (a b: nat), (S a <== S b) = (a <== b).
-  Proof.
-    intros.
-    progress cbn.
-    reflexivity.
-  Qed.
 End TypeClasses2.
 
 (* Fails relations_reflexive. *)
@@ -196,14 +180,14 @@ Module TypeClasses3.
   Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   #[export]
-  Instance nat_le: LEOperation nat nat bool := fun a b => (a <=? b)%nat.
+  Instance nat_le: LEOperation nat nat Prop := Nat.le.
 
   #[export]
-  Instance Z_le: LEOperation Z Z bool := fun a b => (a <=? b)%Z.
+  Instance Z_le: LEOperation Z Z Prop := Z.le.
 
   #[export]
-  Instance Z_nat_le: LEOperation Z nat bool :=
-  fun a b => (a <=? Z.of_nat b)%Z.
+  Instance Z_nat_le: LEOperation Z nat Prop :=
+  fun a b => (a <= Z.of_nat b)%Z.
 
   #[export]
   Instance relation_relation_le (A: Type)
@@ -247,14 +231,6 @@ Module TypeClasses3.
     Fail progress cbn.
     reflexivity.
   Qed.
-
-  (* Passes *)
-  Theorem cbn_simplifies_leb: forall (a b: nat), (S a <== S b) = (a <== b).
-  Proof.
-    intros.
-    progress cbn.
-    reflexivity.
-  Qed.
 End TypeClasses3.
 
 (* Fails relations_reflexive and crelations_reflexive. *)
@@ -273,23 +249,23 @@ Module TypeClasses4.
   Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   #[export]
-  Instance nat_le_result: LEOperationResult nat nat := Build_LEOperationResult _ _ bool.
+  Instance nat_le_result: LEOperationResult nat nat := Build_LEOperationResult _ _ Prop.
 
   #[export]
-  Instance nat_le: LEOperation nat nat _ := fun a b => (a <=? b)%nat.
+  Instance nat_le: LEOperation nat nat _ := Nat.le.
 
   #[export]
-  Instance Z_le_result: LEOperationResult Z Z := Build_LEOperationResult _ _ bool.
+  Instance Z_le_result: LEOperationResult Z Z := Build_LEOperationResult _ _ Prop.
 
   #[export]
-  Instance Z_le: LEOperation Z Z _ := fun a b => (a <=? b)%Z.
+  Instance Z_le: LEOperation Z Z _ := Z.le.
 
   #[export]
-  Instance Z_nat_le_result: LEOperationResult Z nat := Build_LEOperationResult _ _ bool.
+  Instance Z_nat_le_result: LEOperationResult Z nat := Build_LEOperationResult _ _ Prop.
 
   #[export]
   Instance Z_nat_le: LEOperation Z nat _ :=
-  fun a b => (a <=? Z.of_nat b)%Z.
+  fun a b => (a <= Z.of_nat b)%Z.
 
   #[export]
   Instance relation_relation_le_result (A: Type)
@@ -339,14 +315,6 @@ Module TypeClasses4.
     Fail progress cbn.
     reflexivity.
   Qed.
-
-  (* Passes *)
-  Theorem cbn_simplifies_leb: forall (a b: nat), (S a <== S b) = (a <== b).
-  Proof.
-    intros.
-    progress cbn.
-    reflexivity.
-  Qed.
 End TypeClasses4.
 
 (* Passes tests *)
@@ -366,7 +334,7 @@ Module TypeClassesCanonicalSignature.
   Export LESignature(LESignature).
 
   #[global]
-  Canonical Structure signature (A B C: Type)
+  Canonical Structure le_signature (A B C: Type)
   : LESignature :=
   {|
     LESignature.A := A;
@@ -379,45 +347,77 @@ Module TypeClassesCanonicalSignature.
   Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   #[export]
-  Instance nat_le: LEOperation (signature nat nat bool) :=
-  fun a b => (a <=? b)%nat.
+  Instance nat_le: LEOperation (le_signature nat nat Prop) := Nat.le.
 
   #[export]
-  Instance Z_le: LEOperation (signature Z Z bool) :=
-  fun a b => (a <=? b)%Z.
+  Instance Z_le: LEOperation (le_signature Z Z Prop) := Z.le.
 
   #[export]
-  Instance Z_nat_le: LEOperation (signature Z nat bool) :=
-  fun a b => (a <=? Z.of_nat b)%Z.
+  Instance Z_nat_le: LEOperation (le_signature Z nat Prop) :=
+  fun a b => (a <= Z.of_nat b)%Z.
 
+  Set Warnings "-redundant-canonical-projection".
+  (* Declares that anything that takes a relation as the first argument must
+     return a Prop. The second argument is left unconstrained. *)
   #[global]
-  Canonical Structure relation_le_signature (A: Type)
+  Canonical Structure relation_le_signature1 (A: Type) (B: Type)
   : LESignature :=
   {|
     LESignature.A := relation A;
-    LESignature.B := relation A;
+    LESignature.B := B;
     LESignature.C := Prop;
   |}.
 
-  #[export]
-  Instance relation_relation_le (A: Type)
-  : LEOperation (relation_le_signature A) :=
-  fun R S => RelationClasses.subrelation R S.
-
+  (* Declares that anything that takes a relation as the second argument must
+     return a Prop. The first argument is left unconstrained. *)
   #[global]
-  #[universes(polymorphic)]
-  Canonical Structure crelation_le_signature@{Input Output} (A: Type@{Input})
+  Canonical Structure relation_le_signature2 (A: Type) (B: Type)
   : LESignature :=
   {|
-    LESignature.A := crelation@{Input Output} A;
-    LESignature.B := crelation@{Input Output} A;
-    LESignature.C := Type@{Output};
+    LESignature.A := A;
+    LESignature.B := relation B;
+    LESignature.C := Prop;
   |}.
+  Set Warnings "".
+
+  #[export]
+  Instance relation_relation_le (A: Type)
+  : LEOperation _ :=
+  fun (R S: relation A) => RelationClasses.subrelation R S.
+
+  Set Warnings "-redundant-canonical-projection".
+  (* Declares that anything that takes a crelation as the first argument must
+     return a Type. The second argument is left unconstrained. *)
+  #[global]
+  #[universes(polymorphic)]
+  Canonical Structure crelation_le_signature1@{A1 A2 B C}
+    (A: Type@{A1}) (B: Type@{B})
+  : LESignature :=
+  {|
+    LESignature.A := crelation@{A1 A2} A;
+    LESignature.B := B;
+    LESignature.C := Type@{C};
+  |}.
+
+  (* Declares that anything that takes a crelation as the second argument must
+     return a Type. The first argument is left unconstrained. *)
+  #[global]
+  #[universes(polymorphic)]
+  Canonical Structure crelation_le_signature2@{A B1 B2 C}
+    (A: Type@{A}) (B: Type@{B1})
+  : LESignature :=
+  {|
+    LESignature.A := A;
+    LESignature.B := crelation@{B1 B2} B;
+    LESignature.C := Type@{C};
+  |}.
+  Set Warnings "".
 
   #[export]
   #[universes(polymorphic)]
-  Instance crelation_crelation_le@{Input Output} (A: Type@{Input})
-  : LEOperation (crelation_le_signature@{Input Output} A) :=
+  Instance crelation_crelation_le@{Input Output CRelation} (A: Type@{Input})
+  : LEOperation (crelation_le_signature1@{Input Output CRelation Output}
+                   A (crelation@{Input Output} A)) :=
   fun (R S: crelation@{Input Output} A) =>
     CRelationClasses.subrelation@{Input Output Output} R S.
 
@@ -430,7 +430,7 @@ Module TypeClassesCanonicalSignature.
   Definition compare_relations (A: Type) (R S: relation A) :=
     R <== S.
 
-  Definition compare_crelations (A: Type) (R S: crelation A) :=
+  Definition compare_crelations (A: Type) (R: crelation A) S :=
     R <== S.
 
   Definition relations_reflexive (A: Type)
@@ -439,19 +439,35 @@ Module TypeClassesCanonicalSignature.
   Definition crelations_reflexive (A: Type)
   : forall (R: crelation A), R <== R := fun R x y Rxy => Rxy.
 
+  Definition empty_relation (A: Type) : relation A := fun x y => False.
+
+  (* Tests that the type of R can be inferred when it is on the left side of
+     _ <== _ . *)
+  Theorem R_le_empty (A: Type) R
+    : R <== empty_relation A ->
+      RelationClasses.relation_equivalence R (empty_relation A).
+  Proof.
+    intros Hempty.
+    eapply RelationClasses.antisymmetry.
+    - apply Hempty.
+    - intros x y Hxy.
+      destruct Hxy.
+  Qed.
+
+  (* Tests that the type of R can be inferred when it is on the right side of
+     _ <== _ . *)
+  Theorem empty_le_r (A: Type) R
+    : empty_relation A <== R.
+  Proof.
+    intros x y Hxy.
+    destruct Hxy.
+  Qed.
+
   (* Passes *)
   Theorem cbn_keeps_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
     Fail progress cbn.
-    reflexivity.
-  Qed.
-
-  (* Passes *)
-  Theorem cbn_simplifies_leb: forall (a b: nat), (S a <== S b) = (a <== b).
-  Proof.
-    intros.
-    progress cbn.
     reflexivity.
   Qed.
 End TypeClassesCanonicalSignature.
@@ -490,7 +506,7 @@ Module CanonicalStructures.
   |}.
 
   Canonical Structure nat_nat_le: NatLEOperation := {|
-    NatLEOperation.op a b := a <=? b;
+    NatLEOperation.op := Nat.le;
   |}.
 
   Module ZLEOperation.
@@ -509,11 +525,11 @@ Module CanonicalStructures.
   |}.
 
   Canonical Structure Z_Z_le: ZLEOperation := {|
-    ZLEOperation.op a b := (a <=? b)%Z;
+    ZLEOperation.op := Z.le;
   |}.
 
   Canonical Structure Z_nat_le: ZLEOperation := {|
-    ZLEOperation.op a b := (a <=? Z.of_nat b)%Z;
+    ZLEOperation.op a b := (a <= Z.of_nat b)%Z;
   |}.
 
   Module RelationLEOperation.
@@ -591,19 +607,24 @@ Module CanonicalStructures.
   Definition crelations_reflexive (A: Type)
   : forall (R: crelation A), R <== R := fun R x y Rxy => Rxy.
 
+  Definition empty_relation (A: Type) : relation A := fun x y => False.
+
+  (* Tests that the type of R can be inferred when it is on the left side of
+     _ <== _ . *)
+  Fail Theorem R_le_empty (A: Type) R
+    : R <== empty_relation A ->
+      RelationClasses.relation_equivalence R (empty_relation A).
+
+  (* Tests that the type of R can be inferred when it is on the right side of
+     _ <== _ . *)
+  Fail Theorem empty_le_r (A: Type) R
+    : empty_relation A <== R.
+
   (* Fails *)
   Theorem cbn_keeps_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
     (* Ideally this would not make progress. *)
-    progress cbn.
-    reflexivity.
-  Qed.
-
-  (* Passes *)
-  Theorem cbn_simplifies_leb: forall (a b: nat), (S a <== S b) = (a <== b).
-  Proof.
-    intros.
     progress cbn.
     reflexivity.
   Qed.
@@ -645,7 +666,7 @@ Module CanonicalStructuresSimplNever.
   |}.
 
   Canonical Structure nat_nat_le: NatLEOperation := {|
-    NatLEOperation.op a b := a <=? b;
+    NatLEOperation.op := Nat.le;
   |}.
 
   Module ZLEOperation.
@@ -664,11 +685,11 @@ Module CanonicalStructuresSimplNever.
   |}.
 
   Canonical Structure Z_Z_le: ZLEOperation := {|
-    ZLEOperation.op a b := (a <=? b)%Z;
+    ZLEOperation.op := Z.le;
   |}.
 
   Canonical Structure Z_nat_le: ZLEOperation := {|
-    ZLEOperation.op a b := (a <=? Z.of_nat b)%Z;
+    ZLEOperation.op a b := (a <= Z.of_nat b)%Z;
   |}.
 
   Module RelationLEOperation.
@@ -750,15 +771,6 @@ Module CanonicalStructuresSimplNever.
   Theorem cbn_keeps_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
-    Fail progress cbn.
-    reflexivity.
-  Qed.
-
-  (* Fails *)
-  Theorem cbn_simplifies_leb: forall (a b: nat), (S a <== S b) = (a <== b).
-  Proof.
-    intros.
-    (* Ideally this would make progres. *)
     Fail progress cbn.
     reflexivity.
   Qed.
