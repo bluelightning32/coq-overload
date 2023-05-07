@@ -240,28 +240,38 @@ Module TypeClasses4.
   Open Scope operation_scope.
 
   Class LEOperationResult (A B: Type) := {
-    le_result: Type;
+    le_result: A -> B -> Type;
   }.
 
   Arguments le_result : simpl never.
 
-  Class LEOperation (A B: Type) (C: LEOperationResult A B) := le: A -> B -> @le_result A B C.
+  Class LEOperation (A B: Type) (C: LEOperationResult A B) :=
+  le: forall (a: A) (b: B), le_result a b.
   Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   #[export]
-  Instance nat_le_result: LEOperationResult nat nat := Build_LEOperationResult _ _ Prop.
+  Instance nat_le_result: LEOperationResult nat nat :=
+  {|
+    le_result _ _ := Prop;
+  |}.
 
   #[export]
   Instance nat_le: LEOperation nat nat _ := Nat.le.
 
   #[export]
-  Instance Z_le_result: LEOperationResult Z Z := Build_LEOperationResult _ _ Prop.
+  Instance Z_le_result: LEOperationResult Z Z :=
+  {|
+    le_result _ _ := Prop;
+  |}.
 
   #[export]
   Instance Z_le: LEOperation Z Z _ := Z.le.
 
   #[export]
-  Instance Z_nat_le_result: LEOperationResult Z nat := Build_LEOperationResult _ _ Prop.
+  Instance Z_nat_le_result: LEOperationResult Z nat :=
+  {|
+    le_result _ _ := Prop;
+  |}.
 
   #[export]
   Instance Z_nat_le: LEOperation Z nat _ :=
@@ -269,7 +279,10 @@ Module TypeClasses4.
 
   #[export]
   Instance relation_relation_le_result (A: Type)
-  : LEOperationResult (relation A) (relation A) := Build_LEOperationResult _ _ Prop.
+  : LEOperationResult (relation A) (relation A) :=
+  {|
+    le_result _ _ := Prop;
+  |}.
 
   #[export]
   Instance relation_relation_le (A: Type)
@@ -281,7 +294,9 @@ Module TypeClasses4.
   Instance crelation_crelation_le_result@{Input Output} (A: Type@{Input})
   : LEOperationResult (crelation@{Input Output} A)
                       (crelation@{Input Output} A) :=
-  Build_LEOperationResult _ _ Type@{Output}.
+  {|
+    le_result _ _ := Type@{Output};
+  |}.
 
   #[export]
   #[universes(polymorphic)]
@@ -327,14 +342,14 @@ Module TypeClassesCanonicalSignature.
     Structure LESignature := {
       A: Type;
       B: Type;
-      C: Type;
+      C: A -> B -> Type;
     }.
     Arguments C : simpl never.
   End LESignature.
   Export LESignature(LESignature).
 
   #[global]
-  Canonical Structure le_signature (A B C: Type)
+  Canonical Structure le_signature (A B: Type) (C: A -> B -> Type)
   : LESignature :=
   {|
     LESignature.A := A;
@@ -342,18 +357,20 @@ Module TypeClassesCanonicalSignature.
     LESignature.C := C;
   |}.
 
-  Class LEOperation (r: LESignature) := le: r.(LESignature.A) -> r.(LESignature.B) -> r.(LESignature.C).
+  Class LEOperation (r: LESignature) :=
+  le: forall (a: r.(LESignature.A)) (b: r.(LESignature.B)),
+      r.(LESignature.C) a b.
 
   Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   #[export]
-  Instance nat_le: LEOperation (le_signature nat nat Prop) := Nat.le.
+  Instance nat_le: LEOperation (le_signature nat nat (fun _ _ => Prop)) := Nat.le.
 
   #[export]
-  Instance Z_le: LEOperation (le_signature Z Z Prop) := Z.le.
+  Instance Z_le: LEOperation (le_signature Z Z (fun _ _ => Prop)) := Z.le.
 
   #[export]
-  Instance Z_nat_le: LEOperation (le_signature Z nat Prop) :=
+  Instance Z_nat_le: LEOperation (le_signature Z nat (fun _ _ => Prop)) :=
   fun a b => (a <= Z.of_nat b)%Z.
 
   Set Warnings "-redundant-canonical-projection".
@@ -365,7 +382,7 @@ Module TypeClassesCanonicalSignature.
   {|
     LESignature.A := relation A;
     LESignature.B := B;
-    LESignature.C := Prop;
+    LESignature.C _ _:= Prop;
   |}.
 
   (* Declares that anything that takes a relation as the second argument must
@@ -376,7 +393,7 @@ Module TypeClassesCanonicalSignature.
   {|
     LESignature.A := A;
     LESignature.B := relation B;
-    LESignature.C := Prop;
+    LESignature.C _ _ := Prop;
   |}.
   Set Warnings "".
 
@@ -396,7 +413,7 @@ Module TypeClassesCanonicalSignature.
   {|
     LESignature.A := crelation@{A1 A2} A;
     LESignature.B := B;
-    LESignature.C := Type@{C};
+    LESignature.C _ _ := Type@{C};
   |}.
 
   (* Declares that anything that takes a crelation as the second argument must
@@ -409,7 +426,7 @@ Module TypeClassesCanonicalSignature.
   {|
     LESignature.A := A;
     LESignature.B := crelation@{B1 B2} B;
-    LESignature.C := Type@{C};
+    LESignature.C _ _ := Type@{C};
   |}.
   Set Warnings "".
 
@@ -472,35 +489,37 @@ Module TypeClassesCanonicalSignature.
   Qed.
 End TypeClassesCanonicalSignature.
 
-(* Fails cbn_keeps_notation. *)
+(* Fails cbn_keeps_notation, R_le_empty, and empty_le_r. *)
 Module CanonicalStructures.
   Declare Scope operation_scope.
   Delimit Scope operation_scope with operation.
   Open Scope operation_scope.
 
   Module LEOperation.
-    Structure LEOperation (B: Type) (C: Type) := {
+    Structure LEOperation := {
       A: Type;
-      #[canonical=no] op: A -> B -> C;
+      B: Type;
+      C: A -> B -> Type;
+      #[canonical=no] op: forall a b, C a b;
     }.
   End LEOperation.
   Export LEOperation(LEOperation).
 
-  Definition le {B C: Type} {o: LEOperation B C} := o.(LEOperation.op B C).
+  Definition le {o: LEOperation} := o.(LEOperation.op).
 
   Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   Module NatLEOperation.
     Structure NatLEOperation := {
       B: Type;
-      #[canonical=no] C: Type;
-      #[canonical=no] op: nat -> B -> C;
+      #[canonical=no] C: nat -> B -> Type;
+      #[canonical=no] op: forall a b, C a b;
     }.
   End NatLEOperation.
   Export NatLEOperation(NatLEOperation).
 
   Canonical Structure nat_le (op2: NatLEOperation)
-  : LEOperation op2.(NatLEOperation.B) op2.(NatLEOperation.C) :=
+  : LEOperation :=
   {|
     LEOperation.op:= op2.(NatLEOperation.op);
   |}.
@@ -512,14 +531,14 @@ Module CanonicalStructures.
   Module ZLEOperation.
     Structure ZLEOperation := {
       B: Type;
-      #[canonical=no] C: Type;
-      #[canonical=no] op: Z -> B -> C;
+      #[canonical=no] C: Z -> B -> Type;
+      #[canonical=no] op: forall a b, C a b;
     }.
   End ZLEOperation.
   Export ZLEOperation(ZLEOperation).
 
   Canonical Structure Z_le (op2: ZLEOperation)
-  : LEOperation op2.(ZLEOperation.B) op2.(ZLEOperation.C) :=
+  : LEOperation :=
   {|
     LEOperation.op:= op2.(ZLEOperation.op);
   |}.
@@ -535,8 +554,8 @@ Module CanonicalStructures.
   Module RelationLEOperation.
     Structure RelationLEOperation (A: Type) := {
       B: Type;
-      #[canonical=no] C: Type;
-      #[canonical=no] op: relation A -> B -> C;
+      #[canonical=no] C: relation A -> B -> Type;
+      #[canonical=no] op: forall a b, C a b;
     }.
     Arguments B {A}.
     Arguments C {A}.
@@ -545,7 +564,7 @@ Module CanonicalStructures.
   Export RelationLEOperation(RelationLEOperation).
 
   Canonical Structure relation_le (A: Type) (op2: RelationLEOperation A)
-  : LEOperation op2.(RelationLEOperation.B) op2.(RelationLEOperation.C) :=
+  : LEOperation :=
   {|
     LEOperation.A := relation A;
     LEOperation.op:= op2.(RelationLEOperation.op);
@@ -561,8 +580,8 @@ Module CanonicalStructures.
     #[universes(polymorphic)]
     Structure CRelationLEOperation@{Input Output B C} (A: Type@{Input}) := {
       B: Type@{B};
-      #[canonical=no] C: Type@{C};
-      #[canonical=no] op: crelation@{Input Output} A -> B -> C;
+      #[canonical=no] C: crelation@{Input Output} A -> B -> Type@{C};
+      #[canonical=no] op: forall a b, C a b;
     }.
     Arguments B {A}.
     Arguments C {A}.
@@ -573,7 +592,7 @@ Module CanonicalStructures.
   #[universes(polymorphic)]
   Canonical Structure crelation_le@{Input Output B C} (A: Type@{Input})
     (op2: CRelationLEOperation@{Input Output B C} A)
-  : LEOperation op2.(CRelationLEOperation.B) op2.(CRelationLEOperation.C) :=
+  : LEOperation :=
   {|
     LEOperation.A := crelation A;
     LEOperation.op:= op2.(CRelationLEOperation.op);
@@ -585,7 +604,7 @@ Module CanonicalStructures.
     (A: Type@{Input})
   : CRelationLEOperation@{Input Output1 CRelationB ResultContainer} A :=
   {|
-    CRelationLEOperation.C := Type@{Result};
+    CRelationLEOperation.C _ _ := Type@{Result};
     CRelationLEOperation.op R S := CRelationClasses.subrelation@{Input Output1 Output2} R S;
   |}.
 
@@ -630,37 +649,39 @@ Module CanonicalStructures.
   Qed.
 End CanonicalStructures.
 
+(* Fails R_le_empty and empty_le_r. *)
 Module CanonicalStructuresSimplNever.
   Declare Scope operation_scope.
   Delimit Scope operation_scope with operation.
   Open Scope operation_scope.
 
   Module LEOperation.
-    Structure LEOperation (B: Type) (C: Type) := {
+    Structure LEOperation := {
       A: Type;
-      #[canonical=no] op: A -> B -> C;
+      B: Type;
+      C: A -> B -> Type;
+      #[canonical=no] op: forall a b, C a b;
     }.
-    Arguments op: simpl never.
+    Arguments C: simpl never.
+    Arguments op : simpl never.
   End LEOperation.
   Export LEOperation(LEOperation).
 
-  Definition le {B C: Type} {o: LEOperation B C} := o.(LEOperation.op B C).
+  Definition le {o: LEOperation} := o.(LEOperation.op).
 
   Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   Module NatLEOperation.
     Structure NatLEOperation := {
       B: Type;
-      #[canonical=no] C: Type;
-      #[canonical=no] op: nat -> B -> C;
+      #[canonical=no] C: nat -> B -> Type;
+      #[canonical=no] op: forall a b, C a b;
     }.
-    Arguments B: simpl never.
-    Arguments C: simpl never.
   End NatLEOperation.
   Export NatLEOperation(NatLEOperation).
 
   Canonical Structure nat_le (op2: NatLEOperation)
-  : LEOperation op2.(NatLEOperation.B) op2.(NatLEOperation.C) :=
+  : LEOperation :=
   {|
     LEOperation.op:= op2.(NatLEOperation.op);
   |}.
@@ -672,14 +693,14 @@ Module CanonicalStructuresSimplNever.
   Module ZLEOperation.
     Structure ZLEOperation := {
       B: Type;
-      #[canonical=no] C: Type;
-      #[canonical=no] op: Z -> B -> C;
+      #[canonical=no] C: Z -> B -> Type;
+      #[canonical=no] op: forall a b, C a b;
     }.
   End ZLEOperation.
   Export ZLEOperation(ZLEOperation).
 
   Canonical Structure Z_le (op2: ZLEOperation)
-  : LEOperation op2.(ZLEOperation.B) op2.(ZLEOperation.C) :=
+  : LEOperation :=
   {|
     LEOperation.op:= op2.(ZLEOperation.op);
   |}.
@@ -695,8 +716,8 @@ Module CanonicalStructuresSimplNever.
   Module RelationLEOperation.
     Structure RelationLEOperation (A: Type) := {
       B: Type;
-      #[canonical=no] C: Type;
-      #[canonical=no] op: relation A -> B -> C;
+      #[canonical=no] C: relation A -> B -> Type;
+      #[canonical=no] op: forall a b, C a b;
     }.
     Arguments B {A}.
     Arguments C {A}.
@@ -705,7 +726,7 @@ Module CanonicalStructuresSimplNever.
   Export RelationLEOperation(RelationLEOperation).
 
   Canonical Structure relation_le (A: Type) (op2: RelationLEOperation A)
-  : LEOperation op2.(RelationLEOperation.B) op2.(RelationLEOperation.C) :=
+  : LEOperation :=
   {|
     LEOperation.A := relation A;
     LEOperation.op:= op2.(RelationLEOperation.op);
@@ -721,8 +742,8 @@ Module CanonicalStructuresSimplNever.
     #[universes(polymorphic)]
     Structure CRelationLEOperation@{Input Output B C} (A: Type@{Input}) := {
       B: Type@{B};
-      #[canonical=no] C: Type@{C};
-      #[canonical=no] op: crelation@{Input Output} A -> B -> C;
+      #[canonical=no] C: crelation@{Input Output} A -> B -> Type@{C};
+      #[canonical=no] op: forall a b, C a b;
     }.
     Arguments B {A}.
     Arguments C {A}.
@@ -733,7 +754,7 @@ Module CanonicalStructuresSimplNever.
   #[universes(polymorphic)]
   Canonical Structure crelation_le@{Input Output B C} (A: Type@{Input})
     (op2: CRelationLEOperation@{Input Output B C} A)
-  : LEOperation op2.(CRelationLEOperation.B) op2.(CRelationLEOperation.C) :=
+  : LEOperation :=
   {|
     LEOperation.A := crelation A;
     LEOperation.op:= op2.(CRelationLEOperation.op);
@@ -745,7 +766,7 @@ Module CanonicalStructuresSimplNever.
     (A: Type@{Input})
   : CRelationLEOperation@{Input Output1 CRelationB ResultContainer} A :=
   {|
-    CRelationLEOperation.C := Type@{Result};
+    CRelationLEOperation.C _ _ := Type@{Result};
     CRelationLEOperation.op R S := CRelationClasses.subrelation@{Input Output1 Output2} R S;
   |}.
 
@@ -766,6 +787,19 @@ Module CanonicalStructuresSimplNever.
 
   Definition crelations_reflexive (A: Type)
   : forall (R: crelation A), R <== R := fun R x y Rxy => Rxy.
+
+  Definition empty_relation (A: Type) : relation A := fun x y => False.
+
+  (* Tests that the type of R can be inferred when it is on the left side of
+     _ <== _ . *)
+  Fail Theorem R_le_empty (A: Type) R
+    : R <== empty_relation A ->
+      RelationClasses.relation_equivalence R (empty_relation A).
+
+  (* Tests that the type of R can be inferred when it is on the right side of
+     _ <== _ . *)
+  Fail Theorem empty_le_r (A: Type) R
+    : empty_relation A <== R.
 
   (* Passes *)
   Theorem cbn_keeps_notation: forall (a b: nat), (a <== b) = (a <== b).
