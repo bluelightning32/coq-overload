@@ -57,6 +57,12 @@ Module NativeNotations.
     apply Plus.plus_le_compat_r_stt.
   Qed.
 
+  Theorem nat_le_reflexive: forall (n: nat), (n <== n)%nat_op.
+  Proof.
+    intros.
+    reflexivity.
+  Qed.
+
   Theorem nat_plus_0_r_le : forall (n: nat), (n [+] 0 <== n)%nat_op.
   Proof.
     intros.
@@ -65,8 +71,8 @@ Module NativeNotations.
   Qed.
 End NativeNotations.
 
-(* Fails cbn_keeps_le_notation, relations_reflexive, crelations_reflexive, and
-   nat_plus_0_r_le.
+(* Fails cbn_keeps_le_notation, relations_reflexive, crelations_reflexive,
+   nat_le_reflexive, and nat_plus_0_r_le.
    list_of_n_sum_types half fails.
  *)
 Module TypeClasses1.
@@ -216,10 +222,13 @@ Module TypeClasses1.
     reflexivity.
   Qed.
 
+  Fail Theorem nat_le_reflexive: forall (n: nat), n <== n.
+
   Fail Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
 End TypeClasses1.
 
-(* Fails cbn_keeps_le_notation relations_reflexive, and nat_plus_0_r_le.
+(* Fails cbn_keeps_le_notation relations_reflexive, nat_le_reflexive, and
+   nat_plus_0_r_le.
    list_of_n_sum_types half fails.
  *)
 Module TypeClasses2.
@@ -371,10 +380,12 @@ Module TypeClasses2.
     reflexivity.
   Qed.
 
+  Fail Theorem nat_le_reflexive: forall (n: nat), n <== n.
+
   Fail Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
 End TypeClasses2.
 
-(* Fails relations_reflexive and nat_plus_0_r_le.
+(* Fails relations_reflexive, nat_le_reflexive, and nat_plus_0_r_le.
    list_of_n_sum_types half fails.
  *)
 Module TypeClasses3.
@@ -434,6 +445,7 @@ Module TypeClasses3.
   Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
+    (* This is supposed to fail. *)
     Fail progress cbn.
     reflexivity.
   Qed.
@@ -503,10 +515,13 @@ Module TypeClasses3.
     reflexivity.
   Qed.
 
+  Fail Theorem nat_le_reflexive: forall (n: nat), n <== n.
+
   Fail Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
 End TypeClasses3.
 
-(* Fails relations_reflexive, crelations_reflexive, and nat_plus_0_r_le.
+(* Fails relations_reflexive, crelations_reflexive, nat_le_reflexive, and
+   nat_plus_0_r_le.
    list_of_n_sum_types half fails.
  *)
 Module TypeClasses4.
@@ -602,6 +617,7 @@ Module TypeClasses4.
   Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
+    (* This is supposed to fail. *)
     Fail progress cbn.
     reflexivity.
   Qed.
@@ -686,6 +702,8 @@ Module TypeClasses4.
     cbn.
     reflexivity.
   Qed.
+
+  Fail Theorem nat_le_reflexive: forall (n: nat), n <== n.
 
   Fail Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
 End TypeClasses4.
@@ -978,6 +996,12 @@ Module CanonicalStructures.
     reflexivity.
   Qed.
 
+  Theorem nat_le_reflexive: forall (n: nat), n <== n.
+  Proof.
+    intros.
+    reflexivity.
+  Qed.
+
   Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
   Proof.
     intros.
@@ -1142,6 +1166,7 @@ Module CanonicalStructuresSimplNever.
   Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
+    (* This is supposed to fail. *)
     Fail progress cbn.
     reflexivity.
   Qed.
@@ -1277,6 +1302,12 @@ Module CanonicalStructuresSimplNever.
     reflexivity.
   Qed.
 
+  Theorem nat_le_reflexive: forall (n: nat), n <== n.
+  Proof.
+    intros.
+    reflexivity.
+  Qed.
+
   Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
   Proof.
     intros.
@@ -1296,20 +1327,11 @@ Module TypeClassesCanonicalSignature.
     Structure LESignature := {
       A: Type;
       B: Type;
-      C: A -> B -> Type;
+      #[canonical=no] C: A -> B -> Type;
     }.
     Arguments C : simpl never.
   End LESignature.
   Export LESignature(LESignature).
-
-  #[global]
-  Canonical Structure le_signature (A B: Type) (C: A -> B -> Type)
-  : LESignature :=
-  {|
-    LESignature.A := A;
-    LESignature.B := B;
-    LESignature.C := C;
-  |}.
 
   Class LEOperation (r: LESignature) :=
   le: forall (a: r.(LESignature.A)) (b: r.(LESignature.B)),
@@ -1317,17 +1339,73 @@ Module TypeClassesCanonicalSignature.
 
   Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
+  Module NatLESignature.
+    Structure NatLESignature := {
+      B: Type;
+      C: nat -> B -> Type;
+    }.
+  End NatLESignature.
+  Export NatLESignature(NatLESignature).
+
+  #[global]
+  Canonical Structure nat_le_signature (sig2: NatLESignature)
+  : LESignature :=
+  {|
+    LESignature.A := nat;
+    LESignature.B := sig2.(NatLESignature.B);
+    LESignature.C := sig2.(NatLESignature.C);
+  |}.
+
+  #[global]
+  Canonical Structure nat_nat_le_signature: NatLESignature :=
+  {|
+    NatLESignature.B := nat;
+    NatLESignature.C _ _ := Prop;
+  |}.
+
   #[export]
   Instance nat_le: LEOperation _ := Nat.le.
+
+  Module ZLESignature.
+    Structure ZLESignature := {
+      B: Type;
+      #[canonical=no] C: Z -> B -> Type;
+    }.
+  End ZLESignature.
+  Export ZLESignature(ZLESignature).
+
+  #[global]
+  Canonical Structure Z_le_signature (sig2: ZLESignature)
+  : LESignature :=
+  {|
+    LESignature.A := Z;
+    LESignature.B := sig2.(ZLESignature.B);
+    LESignature.C := sig2.(ZLESignature.C);
+  |}.
+
+  #[global]
+  Canonical Structure Z_Z_le_signature: ZLESignature :=
+  {|
+    ZLESignature.B := Z;
+    ZLESignature.C _ _ := Prop;
+  |}.
 
   #[export]
   Instance Z_le: LEOperation _ := Z.le.
 
+  #[global]
+  Canonical Structure Z_nat_le_signature: ZLESignature :=
+  {|
+    ZLESignature.B := nat;
+    ZLESignature.C _ _ := Prop;
+  |}.
+
   #[export]
-  Instance Z_nat_le: LEOperation (le_signature Z nat (fun _ _ => Prop)) :=
+  Instance Z_nat_le: LEOperation _ :=
   fun a b => (a <= Z.of_nat b)%Z.
 
-  Set Warnings "-redundant-canonical-projection".
+  Definition relation_no_match {A: Type} (a: A): A := a.
+
   (* Declares that anything that takes a relation as the first argument must
      return a Prop. The second argument is left unconstrained. *)
   #[global]
@@ -1335,7 +1413,7 @@ Module TypeClassesCanonicalSignature.
   : LESignature :=
   {|
     LESignature.A := relation A;
-    LESignature.B := B;
+    LESignature.B := relation_no_match B;
     LESignature.C _ _:= Prop;
   |}.
 
@@ -1345,18 +1423,22 @@ Module TypeClassesCanonicalSignature.
   Canonical Structure relation_le_signature2 (A: Type) (B: Type)
   : LESignature :=
   {|
-    LESignature.A := A;
+    LESignature.A := relation_no_match A;
     LESignature.B := relation B;
     LESignature.C _ _ := Prop;
   |}.
-  Set Warnings "".
 
   #[export]
-  Instance relation_relation_le (A: Type)
-  : LEOperation _ :=
+  Instance relation_relation_le1 (A: Type)
+  : LEOperation (relation_le_signature1 _ _) :=
   fun (R S: relation A) => RelationClasses.subrelation R S.
 
-  Set Warnings "-redundant-canonical-projection".
+  #[export]
+  Instance relation_relation_le2 (A: Type)
+  : LEOperation (relation_le_signature2 _ _) := relation_relation_le1 A.
+
+  Definition crelation_no_match {A: Type} (a: A): A := a.
+
   (* Declares that anything that takes a crelation as the first argument must
      return a Type. The second argument is left unconstrained. *)
   #[global]
@@ -1366,7 +1448,7 @@ Module TypeClassesCanonicalSignature.
   : LESignature :=
   {|
     LESignature.A := crelation@{A1 A2} A;
-    LESignature.B := B;
+    LESignature.B := crelation_no_match B;
     LESignature.C _ _ := Type@{C};
   |}.
 
@@ -1378,11 +1460,10 @@ Module TypeClassesCanonicalSignature.
     (A: Type@{A}) (B: Type@{B1})
   : LESignature :=
   {|
-    LESignature.A := A;
+    LESignature.A := crelation_no_match A;
     LESignature.B := crelation@{B1 B2} B;
     LESignature.C _ _ := Type@{C};
   |}.
-  Set Warnings "".
 
   #[export]
   #[universes(polymorphic)]
@@ -1438,6 +1519,7 @@ Module TypeClassesCanonicalSignature.
   Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
+    (* This is supposed to fail. *)
     Fail progress cbn.
     reflexivity.
   Qed.
@@ -1465,6 +1547,30 @@ Module TypeClassesCanonicalSignature.
   add: forall (a: r.(AddSignature.A)) (b: r.(AddSignature.B)),
       r.(AddSignature.C) a b.
   Infix "[+]" := add (at level 50, left associativity) : operation_scope.
+
+  Module NatAddSignature.
+    Structure NatAddSignature := {
+      B: Type;
+      C: nat -> B -> Type;
+    }.
+  End NatAddSignature.
+  Export NatAddSignature(NatAddSignature).
+
+  #[global]
+  Canonical Structure nat_add_signature (sig2: NatAddSignature)
+  : AddSignature :=
+  {|
+    AddSignature.A := nat;
+    AddSignature.B := sig2.(NatAddSignature.B);
+    AddSignature.C := sig2.(NatAddSignature.C);
+  |}.
+
+  #[global]
+  Canonical Structure nat_nat_add_signature: NatAddSignature :=
+  {|
+    NatAddSignature.B := nat;
+    NatAddSignature.C _ _ := nat;
+  |}.
 
   #[export]
   Instance nat_add: AddOperation _ := Nat.add.
@@ -1504,7 +1610,7 @@ Module TypeClassesCanonicalSignature.
 
   #[global]
   #[universes(polymorphic)]
-  Canonical Structure set_type_add_signature@{U}
+  Canonical Structure type_type_add_signature@{U}
   : TypeAddSignature@{U} :=
   {|
     TypeAddSignature.B := Type@{U};
@@ -1557,5 +1663,16 @@ Module TypeClassesCanonicalSignature.
     reflexivity.
   Qed.
 
-  Fail Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
+  Theorem nat_le_reflexive: forall (n: nat), n <== n.
+  Proof.
+    intros.
+    reflexivity.
+  Qed.
+
+  Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
+  Proof.
+    intros.
+    rewrite Nat.add_0_r.
+    reflexivity.
+  Qed.
 End TypeClassesCanonicalSignature.
