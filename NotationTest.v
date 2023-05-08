@@ -56,10 +56,19 @@ Module NativeNotations.
   Proof.
     apply Plus.plus_le_compat_r_stt.
   Qed.
+
+  Theorem nat_plus_0_r_le : forall (n: nat), (n [+] 0 <== n)%nat_op.
+  Proof.
+    intros.
+    rewrite Nat.add_0_r.
+    reflexivity.
+  Qed.
 End NativeNotations.
 
-(* Fails cbn_keeps_le_notation, relations_reflexive, and crelations_reflexive.
-   list_of_n_sum_types half fails. *)
+(* Fails cbn_keeps_le_notation, relations_reflexive, crelations_reflexive, and
+   nat_plus_0_r_le.
+   list_of_n_sum_types half fails.
+ *)
 Module TypeClasses1.
   Declare Scope operation_scope.
   Delimit Scope operation_scope with operation.
@@ -206,10 +215,13 @@ Module TypeClasses1.
     progress cbn.
     reflexivity.
   Qed.
+
+  Fail Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
 End TypeClasses1.
 
-(* Fails cbn_keeps_le_notation and relations_reflexive. list_of_n_sum_types
-   half fails. *)
+(* Fails cbn_keeps_le_notation relations_reflexive, and nat_plus_0_r_le.
+   list_of_n_sum_types half fails.
+ *)
 Module TypeClasses2.
   Declare Scope operation_scope.
   Delimit Scope operation_scope with operation.
@@ -358,9 +370,13 @@ Module TypeClasses2.
     progress cbn.
     reflexivity.
   Qed.
+
+  Fail Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
 End TypeClasses2.
 
-(* Fails relations_reflexive. list_of_n_sum_types half fails. *)
+(* Fails relations_reflexive and nat_plus_0_r_le.
+   list_of_n_sum_types half fails.
+ *)
 Module TypeClasses3.
   Declare Scope operation_scope.
   Delimit Scope operation_scope with operation.
@@ -486,10 +502,13 @@ Module TypeClasses3.
     cbn.
     reflexivity.
   Qed.
+
+  Fail Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
 End TypeClasses3.
 
-(* Fails relations_reflexive and crelations_reflexive. list_of_n_sum_types half
-   fails. *)
+(* Fails relations_reflexive, crelations_reflexive, and nat_plus_0_r_le.
+   list_of_n_sum_types half fails.
+ *)
 Module TypeClasses4.
   Declare Scope operation_scope.
   Delimit Scope operation_scope with operation.
@@ -667,9 +686,12 @@ Module TypeClasses4.
     cbn.
     reflexivity.
   Qed.
+
+  Fail Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
 End TypeClasses4.
 
-(* Passes tests *)
+(* Fails nat_plus_0_r_le.
+ *)
 Module TypeClassesCanonicalSignature.
   Declare Scope operation_scope.
   Delimit Scope operation_scope with operation.
@@ -939,6 +961,8 @@ Module TypeClassesCanonicalSignature.
     progress change (S (a [+] b)) with (S a [+] b).
     reflexivity.
   Qed.
+
+  Fail Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
 End TypeClassesCanonicalSignature.
 
 (* Fails cbn_keeps_le_notation, R_le_empty, and empty_le_r. *)
@@ -1226,6 +1250,13 @@ Module CanonicalStructures.
     intros.
     (* Ideally this would pass. *)
     progress cbn.
+    reflexivity.
+  Qed.
+
+  Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
+  Proof.
+    intros.
+    rewrite Nat.add_0_r.
     reflexivity.
   Qed.
 End CanonicalStructures.
@@ -1518,6 +1549,13 @@ Module CanonicalStructuresSimplNever.
     intros.
     (* Ideally this would pass. *)
     Fail progress cbn.
+    reflexivity.
+  Qed.
+
+  Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
+  Proof.
+    intros.
+    rewrite Nat.add_0_r.
     reflexivity.
   Qed.
 End CanonicalStructuresSimplNever.
