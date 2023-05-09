@@ -1316,7 +1316,7 @@ Module CanonicalStructuresSimplNever.
   Qed.
 End CanonicalStructuresSimplNever.
 
-(* Fails nat_plus_0_r_le.
+(* Fails nat_add_0_r.
  *)
 Module TypeClassesCanonicalSignature.
   Declare Scope operation_scope.
@@ -1663,6 +1663,18 @@ Module TypeClassesCanonicalSignature.
     reflexivity.
   Qed.
 
+  Theorem nat_add_comm: forall (m n: nat), m [+] n = n [+] m.
+  Proof.
+    apply Nat.add_comm.
+  Qed.
+
+  (* Fails *)
+  Theorem nat_add_0_r : forall (n: nat), n [+] 0 = n.
+  Proof.
+    intros.
+    Fail rewrite nat_add_comm.
+  Abort.
+
   Theorem nat_le_reflexive: forall (n: nat), n <== n.
   Proof.
     intros.
@@ -1676,3 +1688,377 @@ Module TypeClassesCanonicalSignature.
     reflexivity.
   Qed.
 End TypeClassesCanonicalSignature.
+
+(* Passes all tests
+ *)
+Module TypeClassesUnfoldResult.
+  Declare Scope operation_scope.
+  Delimit Scope operation_scope with operation.
+  Open Scope operation_scope.
+
+  Module LESignature.
+    Structure LESignature := {
+      A: Type;
+      B: Type;
+      #[canonical=no] C: A -> B -> Type;
+    }.
+    Arguments C : simpl never.
+  End LESignature.
+  Export LESignature(LESignature).
+
+  Class LEOperation (r: LESignature) :=
+  le: forall (a: r.(LESignature.A)) (b: r.(LESignature.B)),
+      (let '{| LESignature.C := C; |} := r
+         return (r.(LESignature.A) -> r.(LESignature.B) -> Type) in C) a b.
+
+  Infix "<==" := le (at level 70, no associativity) : operation_scope.
+
+  Module NatLESignature.
+    Structure NatLESignature := {
+      B: Type;
+      C: nat -> B -> Type;
+    }.
+  End NatLESignature.
+  Export NatLESignature(NatLESignature).
+
+  #[global]
+  Canonical Structure nat_le_signature (sig2: NatLESignature)
+  : LESignature :=
+  {|
+    LESignature.A := nat;
+    LESignature.B := sig2.(NatLESignature.B);
+    LESignature.C := let '{| NatLESignature.C := C; |} := sig2 in C;
+  |}.
+
+  #[global]
+  Canonical Structure nat_nat_le_signature: NatLESignature :=
+  {|
+    NatLESignature.B := nat;
+    NatLESignature.C _ _ := Prop;
+  |}.
+
+  #[export]
+  Instance nat_le: LEOperation _ := Nat.le.
+
+  Module ZLESignature.
+    Structure ZLESignature := {
+      B: Type;
+      #[canonical=no] C: Z -> B -> Type;
+    }.
+  End ZLESignature.
+  Export ZLESignature(ZLESignature).
+
+  #[global]
+  Canonical Structure Z_le_signature (sig2: ZLESignature)
+  : LESignature :=
+  {|
+    LESignature.A := Z;
+    LESignature.B := sig2.(ZLESignature.B);
+    LESignature.C := let '{| ZLESignature.C := C; |} := sig2 in C;
+  |}.
+
+  #[global]
+  Canonical Structure Z_Z_le_signature: ZLESignature :=
+  {|
+    ZLESignature.B := Z;
+    ZLESignature.C _ _ := Prop;
+  |}.
+
+  #[export]
+  Instance Z_le: LEOperation _ := Z.le.
+
+  #[global]
+  Canonical Structure Z_nat_le_signature: ZLESignature :=
+  {|
+    ZLESignature.B := nat;
+    ZLESignature.C _ _ := Prop;
+  |}.
+
+  #[export]
+  Instance Z_nat_le: LEOperation _ :=
+  fun a b => (a <= Z.of_nat b)%Z.
+
+  Definition relation_no_match {A: Type} (a: A): A := a.
+
+  (* Declares that anything that takes a relation as the first argument must
+     return a Prop. The second argument is left unconstrained. *)
+  #[global]
+  Canonical Structure relation_le_signature1 (A: Type) (B: Type)
+  : LESignature :=
+  {|
+    LESignature.A := relation A;
+    LESignature.B := relation_no_match B;
+    LESignature.C _ _:= Prop;
+  |}.
+
+  (* Declares that anything that takes a relation as the second argument must
+     return a Prop. The first argument is left unconstrained. *)
+  #[global]
+  Canonical Structure relation_le_signature2 (A: Type) (B: Type)
+  : LESignature :=
+  {|
+    LESignature.A := relation_no_match A;
+    LESignature.B := relation B;
+    LESignature.C _ _ := Prop;
+  |}.
+
+  #[export]
+  Instance relation_relation_le1 (A: Type)
+  : LEOperation (relation_le_signature1 _ _) :=
+  fun (R S: relation A) => RelationClasses.subrelation R S.
+
+  #[export]
+  Instance relation_relation_le2 (A: Type)
+  : LEOperation (relation_le_signature2 _ _) := relation_relation_le1 A.
+
+  Definition crelation_no_match {A: Type} (a: A): A := a.
+
+  (* Declares that anything that takes a crelation as the first argument must
+     return a Type. The second argument is left unconstrained. *)
+  #[global]
+  #[universes(polymorphic)]
+  Canonical Structure crelation_le_signature1@{A1 A2 B C}
+    (A: Type@{A1}) (B: Type@{B})
+  : LESignature :=
+  {|
+    LESignature.A := crelation@{A1 A2} A;
+    LESignature.B := crelation_no_match B;
+    LESignature.C _ _ := Type@{C};
+  |}.
+
+  (* Declares that anything that takes a crelation as the second argument must
+     return a Type. The first argument is left unconstrained. *)
+  #[global]
+  #[universes(polymorphic)]
+  Canonical Structure crelation_le_signature2@{A B1 B2 C}
+    (A: Type@{A}) (B: Type@{B1})
+  : LESignature :=
+  {|
+    LESignature.A := crelation_no_match A;
+    LESignature.B := crelation@{B1 B2} B;
+    LESignature.C _ _ := Type@{C};
+  |}.
+
+  #[export]
+  #[universes(polymorphic)]
+  Instance crelation_crelation_le@{Input Output CRelation} (A: Type@{Input})
+  : LEOperation (crelation_le_signature1@{Input Output CRelation Output}
+                   A (crelation@{Input Output} A)) :=
+  fun (R S: crelation@{Input Output} A) =>
+    CRelationClasses.subrelation@{Input Output Output} R S.
+
+  Definition compare_nats (a b: nat) := a <== b.
+
+  Definition compare_ints (a b: Z) := a <== b.
+
+  Definition compare_Z_nat (a: Z) (b: nat) := a <== b.
+
+  Definition compare_relations (A: Type) (R S: relation A) :=
+    R <== S.
+
+  Definition compare_crelations (A: Type) (R: crelation A) S :=
+    R <== S.
+
+  Definition relations_reflexive (A: Type)
+  : forall (R: relation A), R <== R := fun R x y Rxy => Rxy.
+
+  Definition crelations_reflexive (A: Type)
+  : forall (R: crelation A), R <== R := fun R x y Rxy => Rxy.
+
+  Definition empty_relation (A: Type) : relation A := fun x y => False.
+
+  (* Tests that the type of R can be inferred when it is on the left side of
+     _ <== _ . *)
+  Theorem R_le_empty (A: Type) R
+    : R <== empty_relation A ->
+      RelationClasses.relation_equivalence R (empty_relation A).
+  Proof.
+    intros Hempty.
+    eapply RelationClasses.antisymmetry.
+    - apply Hempty.
+    - intros x y Hxy.
+      destruct Hxy.
+  Qed.
+
+  (* Tests that the type of R can be inferred when it is on the right side of
+     _ <== _ . *)
+  Theorem empty_le_r (A: Type) R
+    : empty_relation A <== R.
+  Proof.
+    intros x y Hxy.
+    destruct Hxy.
+  Qed.
+
+  (* Passes *)
+  Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
+  Proof.
+    intros.
+    (* This is supposed to fail. *)
+    Fail progress cbn.
+    reflexivity.
+  Qed.
+
+  Module AddSignature.
+    Structure AddSignature := {
+      A: Type;
+      B: Type;
+      #[canonical=no] C: A -> B -> Type;
+    }.
+    Arguments C : simpl never.
+  End AddSignature.
+  Export AddSignature(AddSignature).
+
+  #[global]
+  Canonical Structure add_signature (A B: Type) (C: A -> B -> Type)
+  : AddSignature :=
+  {|
+    AddSignature.A := A;
+    AddSignature.B := B;
+    AddSignature.C := C;
+  |}.
+
+  Class AddOperation (r: AddSignature) :=
+  add: forall (a: r.(AddSignature.A)) (b: r.(AddSignature.B)),
+    (let '{| AddSignature.C := C; |} := r in C) a b.
+  Infix "[+]" := add (at level 50, left associativity) : operation_scope.
+
+  Module NatAddSignature.
+    Structure NatAddSignature := {
+      B: Type;
+      C: nat -> B -> Type;
+    }.
+  End NatAddSignature.
+  Export NatAddSignature(NatAddSignature).
+
+  #[global]
+  Canonical Structure nat_add_signature (sig2: NatAddSignature)
+  : AddSignature :=
+  {|
+    AddSignature.A := nat;
+    AddSignature.B := sig2.(NatAddSignature.B);
+    AddSignature.C := let '{| NatAddSignature.C := C; |} := sig2 in C;
+  |}.
+
+  #[global]
+  Canonical Structure nat_nat_add_signature: NatAddSignature :=
+  {|
+    NatAddSignature.B := nat;
+    NatAddSignature.C _ _ := nat;
+  |}.
+
+  #[export]
+  Instance nat_add: AddOperation _ := Nat.add.
+
+  #[export]
+  Instance Z_add: AddOperation _ := Z.add.
+
+  #[export]
+  Instance Z_nat_add: AddOperation (add_signature Z nat (fun _ _ => Z)) :=
+  fun a b => (a + Z.of_nat b)%Z.
+
+  Module TypeAddSignature.
+    Universe B C.
+    #[universes(polymorphic)]
+    Structure TypeAddSignature@{U} := {
+      B: Type@{B};
+      C: Type@{U} -> B -> Type@{C};
+    }.
+  End TypeAddSignature.
+  Export TypeAddSignature(TypeAddSignature).
+
+  #[global]
+  #[universes(polymorphic)]
+  Canonical Structure type_add_signature@{U} (sig2: TypeAddSignature@{U})
+  : AddSignature :=
+  {|
+    AddSignature.A := Type@{U};
+    AddSignature.B := sig2.(TypeAddSignature.B);
+    AddSignature.C := let '{| TypeAddSignature.C := C; |} := sig2 in C;
+  |}.
+
+  Set Warnings "-redundant-canonical-projection".
+  #[global]
+  Canonical Structure set_add_signature (sig2: TypeAddSignature@{Set})
+  : AddSignature := type_add_signature@{Set} sig2.
+  Set Warnings "".
+
+  #[global]
+  #[universes(polymorphic)]
+  Canonical Structure type_type_add_signature@{U}
+  : TypeAddSignature@{U} :=
+  {|
+    TypeAddSignature.B := Type@{U};
+    TypeAddSignature.C (A B: Type@{U}) := Type@{U};
+  |}.
+
+  #[export]
+  #[universes(polymorphic)]
+  Instance type_type_add@{U} : AddOperation _ :=
+  fun (A: Type@{U}) (B: Type@{U}) => (A + B)%type.
+
+  Definition add_nats (a b: nat) := a [+] b.
+
+  Definition add_ints (a b: Z) := a [+] b.
+
+  Definition add_Z_nat (a: Z) (b: nat) := a [+] b.
+
+  (* Passes *)
+  Definition list_of_n_sum_types (A B: Type) (n: nat) : list Type :=
+    repeat (A [+] B) n.
+
+  #[universes(polymorphic)]
+  Definition swap_sum_type@{U} {A B: Type@{U}} (s: A [+] B) : B [+] A :=
+  match s with
+  | inl a => inr a
+  | inr b => inl b
+  end.
+
+  Definition small_id (T: Type@{Set}) (v: T): T := v.
+
+  Definition id_swap {A B: Type@{Set}} (s: A [+] B) : B [+] A :=
+  small_id _ (swap_sum_type s).
+
+  (* Passes *)
+  Theorem cbn_keeps_add_notation: forall (a b: nat), a [+] b = a [+] b.
+  Proof.
+    intros.
+    (* This is supposed to fail. *)
+    Fail progress cbn.
+    reflexivity.
+  Qed.
+
+  (* Passes *)
+  Theorem cbn_simplifies_addition: forall (a b: nat), S a [+] b = S (a [+] b).
+  Proof.
+    intros.
+    progress cbn.
+    (* This makes sure that the implicit parameters matches the default ones. *)
+    progress change (S (a [+] b)) with (S a [+] b).
+    reflexivity.
+  Qed.
+
+  Theorem nat_add_comm: forall (m n: nat), m [+] n = n [+] m.
+  Proof.
+    apply Nat.add_comm.
+  Qed.
+
+  Theorem nat_add_0_r : forall (n: nat), n [+] 0 = n.
+  Proof.
+    intros.
+    rewrite nat_add_comm.
+    reflexivity.
+  Qed.
+
+  Theorem nat_le_reflexive: forall (n: nat), n <== n.
+  Proof.
+    intros.
+    reflexivity.
+  Qed.
+
+  Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
+  Proof.
+    intros.
+    rewrite Nat.add_0_r.
+    reflexivity.
+  Qed.
+End TypeClassesUnfoldResult.
