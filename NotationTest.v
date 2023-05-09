@@ -1663,7 +1663,12 @@ Module TypeClassesCanonicalSignature.
     reflexivity.
   Qed.
 
-  Theorem nat_add_comm: forall (m n: nat), m [+] n = n [+] m.
+  Theorem nat_add_comm: forall m (n: nat), m [+] n = n [+] m.
+  Proof.
+    apply Nat.add_comm.
+  Qed.
+
+  Theorem nat_add_comm': forall (m n: nat), m [+] n = n [+] m.
   Proof.
     apply Nat.add_comm.
   Qed.
@@ -1672,7 +1677,10 @@ Module TypeClassesCanonicalSignature.
   Theorem nat_add_0_r : forall (n: nat), n [+] 0 = n.
   Proof.
     intros.
+    (* Ideally this would work. *)
     Fail rewrite nat_add_comm.
+    (* Ideally this would work. *)
+    Fail rewrite nat_add_comm'.
   Abort.
 
   Theorem nat_le_reflexive: forall (n: nat), n <== n.
@@ -1689,7 +1697,7 @@ Module TypeClassesCanonicalSignature.
   Qed.
 End TypeClassesCanonicalSignature.
 
-(* Passes all tests
+(* nat_add_0_r half passes.
  *)
 Module TypeClassesUnfoldResult.
   Declare Scope operation_scope.
@@ -2037,15 +2045,23 @@ Module TypeClassesUnfoldResult.
     reflexivity.
   Qed.
 
-  Theorem nat_add_comm: forall (m n: nat), m [+] n = n [+] m.
+  Theorem nat_add_comm: forall m (n: nat), m [+] n = n [+] m.
   Proof.
     apply Nat.add_comm.
   Qed.
 
+  Theorem nat_add_comm': forall (m n: nat), m [+] n = n [+] m.
+  Proof.
+    apply Nat.add_comm.
+  Qed.
+
+  (* Half passes. Needs nat_add_comm' instead of nat_add_comm. *)
   Theorem nat_add_0_r : forall (n: nat), n [+] 0 = n.
   Proof.
     intros.
-    rewrite nat_add_comm.
+    (* Ideally this would work. *)
+    Fail rewrite nat_add_comm.
+    rewrite nat_add_comm'.
     reflexivity.
   Qed.
 
