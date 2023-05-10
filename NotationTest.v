@@ -2119,7 +2119,7 @@ Module TypeClassesUnfoldResult.
    * The result from auto is never unfolded. autounfold can be used if one
    * wants these functions to be unfold in the goal.
    *)
-  #[global]
+  #[export]
   Hint Unfold nat_le le : core.
 
   Goal forall m n, S m <== S n -> m <== n.
