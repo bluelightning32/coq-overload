@@ -1545,7 +1545,7 @@ Module TypeClassesCanonicalSignature.
 
   Class AddOperation (r: AddSignature) :=
   add: forall (a: r.(AddSignature.A)) (b: r.(AddSignature.B)),
-      r.(AddSignature.C) a b.
+       r.(AddSignature.C) a b.
   Infix "[+]" := add (at level 50, left associativity) : operation_scope.
 
   Module NatAddSignature.
@@ -1927,7 +1927,7 @@ Module TypeClassesUnfoldResult.
 
   Class AddOperation (r: AddSignature) :=
   add: forall (a: r.(AddSignature.A)) (b: r.(AddSignature.B)),
-    (let '{| AddSignature.C := C; |} := r in C) a b.
+       (let '{| AddSignature.C := C; |} := r in C) a b.
   Infix "[+]" := add (at level 50, left associativity) : operation_scope.
 
   Module NatAddSignature.
