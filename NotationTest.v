@@ -2107,4 +2107,24 @@ Module TypeClassesUnfoldResult.
      relation. So now it can cast nat_le_preorder from an instance of PreOrder
      into an instance of Reflexive. *)
   Succeed Definition nat_refl' := (fun r : Reflexive nat_le => r) _.
+
+  Goal forall m n, S m <== S n -> m <== n.
+  Proof.
+    (* This fails because the auto hints for <= don't exactly match <==. *)
+    Fail progress auto with arith.
+  Abort.
+
+  (* This tells auto to unfold nat_le and le when testing whether a hint
+   * matches the goal. Auto only unfolds to determine if a hint can be applied.
+   * The result from auto is never unfolded. autounfold can be used if one
+   * wants these functions to be unfold in the goal.
+   *)
+  #[global]
+  Hint Unfold nat_le le : core.
+
+  Goal forall m n, S m <== S n -> m <== n.
+  Proof.
+    (* Now auto works because it can see that <== is <=. *)
+    auto with arith.
+  Qed.
 End TypeClassesUnfoldResult.
