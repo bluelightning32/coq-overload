@@ -2077,4 +2077,34 @@ Module TypeClassesUnfoldResult.
     rewrite Nat.add_0_r.
     reflexivity.
   Qed.
+
+  (* Declare nat_le as a PreOrder, which means it is reflexive and transitive.
+     *)
+  #[global]
+  Program Instance nat_le_preorder: PreOrder nat_le.
+  Next Obligation.
+    unfold nat_le.
+    eauto.
+  Qed.
+  Next Obligation.
+    unfold nat_le.
+    eauto with arith.
+  Qed.
+  Fail Next Obligation.
+
+  (* Since nat_le was declared as a PreOrder, that means it is also Reflexive.
+     However, the typeclass search fails because nat_le is a LEOperation
+     instead of a relation. *)
+  Fail Definition nat_refl' := (fun r : Reflexive nat_le => r) _.
+
+  (* Declaring LEOperation as transparent to the typeclasses system allows it
+     to unfold LEOperation and see that it matches the definition of a relation.
+     *)
+  #[export]
+  Typeclasses Transparent LEOperation.
+
+  (* Now the type class system can see that nat_le has the same type as a
+     relation. So now it can cast nat_le_preorder from an instance of PreOrder
+     into an instance of Reflexive. *)
+  Succeed Definition nat_refl' := (fun r : Reflexive nat_le => r) _.
 End TypeClassesUnfoldResult.
