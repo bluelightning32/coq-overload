@@ -141,8 +141,10 @@ Module TypeClasses1.
   Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
-    (* Ideally this would fail. *)
-    progress cbn.
+    cbn.
+    Fail match goal with
+    | |- context [a <== b] => idtac
+    end.
     reflexivity.
   Qed.
 
@@ -208,8 +210,10 @@ Module TypeClasses1.
   Theorem cbn_keeps_add_notation: forall (a b: nat), a [+] b = a [+] b.
   Proof.
     intros.
-    (* Ideally this would fail. *)
-    Succeed progress cbn.
+    cbn.
+    Fail match goal with
+    | |- context [a [+] b] => idtac
+    end.
     reflexivity.
   Qed.
 
@@ -299,8 +303,10 @@ Module TypeClasses2.
   Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
-    (* Ideally this would fail. *)
-    progress cbn.
+    cbn.
+    Fail match goal with
+    | |- context [a <== b] => idtac
+    end.
     reflexivity.
   Qed.
 
@@ -366,8 +372,10 @@ Module TypeClasses2.
   Theorem cbn_keeps_add_notation: forall (a b: nat), a [+] b = a [+] b.
   Proof.
     intros.
-    (* Ideally this would fail. *)
-    Succeed progress cbn.
+    cbn.
+    Fail match goal with
+    | |- context [a [+] b] => idtac
+    end.
     reflexivity.
   Qed.
 
@@ -445,8 +453,10 @@ Module TypeClasses3.
   Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
-    (* This is supposed to fail. *)
-    Fail progress cbn.
+    cbn.
+    match goal with
+    | |- context [a <== b] => idtac
+    end.
     reflexivity.
   Qed.
 
@@ -502,8 +512,10 @@ Module TypeClasses3.
   Theorem cbn_keeps_add_notation: forall (a b: nat), a [+] b = a [+] b.
   Proof.
     intros.
-    (* Ideally this would fail. *)
-    Fail progress cbn.
+    cbn.
+    match goal with
+    | |- context [a [+] b] => idtac
+    end.
     reflexivity.
   Qed.
 
@@ -617,8 +629,10 @@ Module TypeClasses4.
   Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
-    (* This is supposed to fail. *)
-    Fail progress cbn.
+    cbn.
+    match goal with
+    | |- context [a <== b] => idtac
+    end.
     reflexivity.
   Qed.
 
@@ -690,8 +704,10 @@ Module TypeClasses4.
   Theorem cbn_keeps_add_notation: forall (a b: nat), a [+] b = a [+] b.
   Proof.
     intros.
-    (* This should fail. *)
-    Fail progress cbn.
+    cbn.
+    match goal with
+    | |- context [a [+] b] => idtac
+    end.
     reflexivity.
   Qed.
 
@@ -862,8 +878,10 @@ Module CanonicalStructures.
   Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
-    (* Ideally this would not make progress. *)
-    progress cbn.
+    cbn.
+    Fail match goal with
+    | |- context [a <== b] => idtac
+    end.
     reflexivity.
   Qed.
 
@@ -982,8 +1000,10 @@ Module CanonicalStructures.
   Theorem cbn_keeps_add_notation: forall (a b: nat), a [+] b = a [+] b.
   Proof.
     intros.
-    (* Ideally this would fail. *)
-    progress cbn.
+    cbn.
+    Fail match goal with
+    | |- context [a [+] b] => idtac
+    end.
     reflexivity.
   Qed.
 
@@ -1166,8 +1186,10 @@ Module CanonicalStructuresSimplNever.
   Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
-    (* This is supposed to fail. *)
-    Fail progress cbn.
+    cbn.
+    match goal with
+    | |- context [a <== b] => idtac
+    end.
     reflexivity.
   Qed.
 
@@ -1288,8 +1310,10 @@ Module CanonicalStructuresSimplNever.
   Theorem cbn_keeps_add_notation: forall (a b: nat), a [+] b = a [+] b.
   Proof.
     intros.
-    (* Ideally this would fail. *)
-    Fail progress cbn.
+    cbn.
+    match goal with
+    | |- context [a [+] b] => idtac
+    end.
     reflexivity.
   Qed.
 
@@ -1519,8 +1543,10 @@ Module TypeClassesCanonicalSignature.
   Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
-    (* This is supposed to fail. *)
-    Fail progress cbn.
+    cbn.
+    match goal with
+    | |- context [a <== b] => idtac
+    end.
     reflexivity.
   Qed.
 
@@ -1648,8 +1674,10 @@ Module TypeClassesCanonicalSignature.
   Theorem cbn_keeps_add_notation: forall (a b: nat), a [+] b = a [+] b.
   Proof.
     intros.
-    (* This is supposed to fail. *)
-    Fail progress cbn.
+    cbn.
+    match goal with
+    | |- context [a [+] b] => idtac
+    end.
     reflexivity.
   Qed.
 
@@ -1901,8 +1929,10 @@ Module TypeClassesUnfoldResult.
   Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
   Proof.
     intros.
-    (* This is supposed to fail. *)
-    Fail progress cbn.
+    cbn.
+    match goal with
+    | |- context [a <== b] => idtac
+    end.
     reflexivity.
   Qed.
 
@@ -2030,8 +2060,10 @@ Module TypeClassesUnfoldResult.
   Theorem cbn_keeps_add_notation: forall (a b: nat), a [+] b = a [+] b.
   Proof.
     intros.
-    (* This is supposed to fail. *)
-    Fail progress cbn.
+    cbn.
+    match goal with
+    | |- context [a [+] b] => idtac
+    end.
     reflexivity.
   Qed.
 
