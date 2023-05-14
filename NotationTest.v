@@ -81,32 +81,32 @@ Module TypeClasses1.
   Open Scope operation_scope.
 
   Class LEOperation (A B: Type) := {
-    le_result: Type;
-    le: A -> B -> le_result;
+    le_result: A -> B -> Type;
+    le a b: le_result a b;
   }.
   Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   #[export]
   Instance nat_le: LEOperation nat nat := {|
-    le_result := Prop;
+    le_result _ _ := Prop;
     le := Nat.le;
   |}.
 
   #[export]
   Instance Z_le: LEOperation Z Z := {|
-    le_result := Prop;
+    le_result _ _ := Prop;
     le := Z.le;
   |}.
 
   #[export]
   Instance Z_nat_le: LEOperation Z nat := {|
-    le_result := Prop;
+    le_result _ _ := Prop;
     le a b := (a <= Z.of_nat b)%Z;
   |}.
 
   #[export]
   Instance relation_relation_le (A: Type): LEOperation (relation A) (relation A) := {|
-    le_result := Prop;
+    le_result _ _ := Prop;
     le R S := RelationClasses.subrelation R S;
   |}.
 
@@ -115,7 +115,7 @@ Module TypeClasses1.
   Instance crelation_crelation_le@{Input Output} (A: Type@{Input})
   : LEOperation (crelation@{Input Output} A) (crelation@{Input Output} A) :=
   {|
-    le_result := Type@{Output};
+    le_result _ _ := Type@{Output};
     le R S := CRelationClasses.subrelation R S;
   |}.
 
@@ -149,8 +149,8 @@ Module TypeClasses1.
   Qed.
 
   Class AddOperation (A B: Type) := {
-    add_result: Type;
-    add: A -> B -> add_result;
+    add_result: A -> B -> Type;
+    add a b: add_result a b;
   }.
   Infix "[+]" := add (at level 50, left associativity) : operation_scope.
 
@@ -163,19 +163,19 @@ Module TypeClasses1.
 
   #[export]
   Instance nat_add: AddOperation nat nat := {|
-    add_result := nat;
+    add_result _ _ := nat;
     add := Nat.add;
   |}.
 
   #[export]
   Instance Z_add: AddOperation Z Z := {|
-    add_result := Z;
+    add_result _ _ := Z;
     add a b := (a + b)%Z;
   |}.
 
   #[export]
   Instance Z_nat_add: AddOperation Z nat := {|
-    add_result := Z;
+    add_result _ _ := Z;
     add a b := (a + Z.of_nat b)%Z;
   |}.
 
@@ -235,8 +235,8 @@ Module TypeClasses1.
   Fail Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
 End TypeClasses1.
 
-(* Fails cbn_keeps_le_notation relations_reflexive, nat_le_reflexive, and
-   nat_plus_0_r_le.
+(* Fails cbn_keeps_le_notation, relations_reflexive, crelations_reflexive,
+   nat_le_reflexive, and nat_plus_0_r_le.
    list_of_n_sum_types half fails.
  *)
 Module TypeClasses2.
@@ -244,29 +244,29 @@ Module TypeClasses2.
   Delimit Scope operation_scope with operation.
   Open Scope operation_scope.
 
-  Class LEOperation (A B C: Type) := {
-    le: A -> B -> C;
+  Class LEOperation (A B: Type) (C: A -> B -> Type) := {
+    le a b: C a b;
   }.
   Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   #[export]
-  Instance nat_le: LEOperation nat nat Prop := {|
+  Instance nat_le: LEOperation nat nat (fun _ _ => Prop) := {|
     le := Nat.le;
   |}.
 
   #[export]
-  Instance Z_le: LEOperation Z Z Prop := {|
+  Instance Z_le: LEOperation Z Z (fun _ _ => Prop) := {|
     le := Z.le;
   |}.
 
   #[export]
-  Instance Z_nat_le: LEOperation Z nat Prop := {|
+  Instance Z_nat_le: LEOperation Z nat (fun _ _ => Prop) := {|
     le a b := (a <= Z.of_nat b)%Z;
   |}.
 
   #[export]
   Instance relation_relation_le (A: Type)
-  : LEOperation (relation A) (relation A) Prop :=
+  : LEOperation (relation A) (relation A) (fun _ _ => Prop) :=
   {|
     le R S := RelationClasses.subrelation R S;
   |}.
@@ -275,9 +275,9 @@ Module TypeClasses2.
   #[universes(polymorphic)]
   Instance crelation_crelation_le@{Input Output} (A: Type@{Input})
   : LEOperation (crelation@{Input Output} A) (crelation@{Input Output} A)
-                Type@{Output} :=
+                (fun _ _ => Type@{Output}) :=
   Build_LEOperation
-    _ _ Type@{Output}
+    _ _ (fun _ _ => Type@{Output})
     (fun (R S: crelation@{Input Output} A) =>
        CRelationClasses.subrelation@{Input Output Output} R S).
 
@@ -296,12 +296,8 @@ Module TypeClasses2.
   Fail Definition relations_reflexive (A: Type)
   : forall (R R: relation A), R <== R.
 
-  Definition crelations_reflexive (A: Type)
+  Fail Definition crelations_reflexive (A: Type)
   : forall (R: crelation A), R <== R.
-  Proof.
-    intros.
-    reflexivity.
-  Qed.
 
   (* Fails this test because the operator was removed by cbn. *)
   Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
@@ -314,8 +310,8 @@ Module TypeClasses2.
     reflexivity.
   Qed.
 
-  Class AddOperation (A B C: Type) := {
-    add: A -> B -> C;
+  Class AddOperation (A B: Type) (C: A -> B -> Type) := {
+    add a b: C a b;
   }.
   Infix "[+]" := add (at level 50, left associativity) : operation_scope.
 
@@ -327,17 +323,17 @@ Module TypeClasses2.
   Infix "[+]" := add_type (at level 50, left associativity) : type_scope.
 
   #[export]
-  Instance nat_add: AddOperation nat nat nat := {|
+  Instance nat_add: AddOperation nat nat (fun _ _ => nat) := {|
     add := Nat.add;
   |}.
 
   #[export]
-  Instance Z_add: AddOperation Z Z Z := {|
+  Instance Z_add: AddOperation Z Z (fun _ _ => Z) := {|
     add a b := (a + b)%Z;
   |}.
 
   #[export]
-  Instance Z_nat_add: AddOperation Z nat Z := {|
+  Instance Z_nat_add: AddOperation Z nat (fun _ _ => Z) := {|
     add a b := (a + Z.of_nat b)%Z;
   |}.
 
@@ -397,7 +393,8 @@ Module TypeClasses2.
   Fail Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
 End TypeClasses2.
 
-(* Fails relations_reflexive, nat_le_reflexive, and nat_plus_0_r_le.
+(* Fails relations_reflexive, crelations_relfexive, cbn_keeps_le_notation,
+   nat_le_reflexive, and nat_plus_0_r_le.
    list_of_n_sum_types half fails.
  *)
 Module TypeClasses3.
@@ -405,29 +402,29 @@ Module TypeClasses3.
   Delimit Scope operation_scope with operation.
   Open Scope operation_scope.
 
-  Class LEOperation (A B C: Type) := le: A -> B -> C.
+  Class LEOperation (A B: Type) (C: A -> B -> Type) := le a b: C a b.
   Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   #[export]
-  Instance nat_le: LEOperation nat nat Prop := Nat.le.
+  Instance nat_le: LEOperation nat nat (fun _ _ => Prop) := Nat.le.
 
   #[export]
-  Instance Z_le: LEOperation Z Z Prop := Z.le.
+  Instance Z_le: LEOperation Z Z (fun _ _ => Prop) := Z.le.
 
   #[export]
-  Instance Z_nat_le: LEOperation Z nat Prop :=
+  Instance Z_nat_le: LEOperation Z nat (fun _ _ => Prop) :=
   fun a b => (a <= Z.of_nat b)%Z.
 
   #[export]
   Instance relation_relation_le (A: Type)
-  : LEOperation (relation A) (relation A) Prop :=
+  : LEOperation (relation A) (relation A) (fun _ _ => Prop) :=
   fun R S => RelationClasses.subrelation R S.
 
   #[export]
   #[universes(polymorphic)]
   Instance crelation_crelation_le@{Input Output} (A: Type@{Input})
   : LEOperation (crelation@{Input Output} A) (crelation@{Input Output} A)
-                Type@{Output} :=
+                (fun _ _ => Type@{Output}) :=
   fun (R S: crelation@{Input Output} A) =>
     CRelationClasses.subrelation@{Input Output Output} R S.
 
@@ -446,12 +443,8 @@ Module TypeClasses3.
   Fail Definition relations_reflexive (A: Type)
   : forall (R R: relation A), R <== R.
 
-  Definition crelations_reflexive (A: Type)
+  Fail Definition crelations_reflexive (A: Type)
   : forall (R: crelation A), R <== R.
-  Proof.
-    intros.
-    reflexivity.
-  Qed.
 
   (* Passes *)
   Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
@@ -464,7 +457,7 @@ Module TypeClasses3.
     reflexivity.
   Qed.
 
-  Class AddOperation (A B C: Type) := add: A -> B -> C.
+  Class AddOperation (A B: Type) (C: A -> B -> Type) := add a b: C a b.
   Infix "[+]" := add (at level 50, left associativity) : operation_scope.
 
   Universe OperationInput.
@@ -474,13 +467,13 @@ Module TypeClasses3.
   Infix "[+]" := add_type (at level 50, left associativity) : type_scope.
 
   #[export]
-  Instance nat_add: AddOperation nat nat nat := fun a b => (a + b)%nat.
+  Instance nat_add: AddOperation nat nat (fun _ _ => nat) := fun a b => (a + b)%nat.
 
   #[export]
-  Instance Z_add: AddOperation Z Z Z := fun a b => (a + b)%Z.
+  Instance Z_add: AddOperation Z Z (fun _ _ => Z) := fun a b => (a + b)%Z.
 
   #[export]
-  Instance Z_nat_add: AddOperation Z nat Z := fun a b => (a + Z.of_nat b)%Z.
+  Instance Z_nat_add: AddOperation Z nat (fun _ _ => Z) := fun a b => (a + Z.of_nat b)%Z.
 
   #[export]
   #[universes(polymorphic)]
