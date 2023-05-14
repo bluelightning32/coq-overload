@@ -38,6 +38,8 @@ Module NativeNotations.
 
   Definition add_Z_nat (a: Z) (b: nat) := a [+] Z.of_nat b.
 
+  Definition add_nat_Z (a: nat) (b: Z) := Z.of_nat a [+] b.
+
   Definition swap_sum_type {A B: Type} (s: A [+] B) : B [+] A :=
   match s with
   | inl a => inr a
@@ -180,6 +182,12 @@ Module TypeClasses1.
   |}.
 
   #[export]
+  Instance nat_Z_add: AddOperation nat Z := {|
+    add_result _ _ := Z;
+    add a b := (Z.of_nat a + b)%Z;
+  |}.
+
+  #[export]
   #[universes(polymorphic)]
   Instance type_add@{U}: TypeAddOperation@{U} Type@{U} Type@{U} := {|
     add_type (A: Type@{U}) (B: Type@{U}) := (A + B)%type;
@@ -190,6 +198,8 @@ Module TypeClasses1.
   Definition add_ints (a b: Z) := a [+] b.
 
   Definition add_Z_nat (a: Z) (b: nat) := a [+] b.
+
+  Definition add_nat_Z (a: nat) (b: Z) := a [+] b.
 
   (* (A [+] B) fails outside of the type scope. *)
   Fail Definition list_of_n_sum_types (A B: Type) (n: nat) : list Type :=
@@ -338,6 +348,11 @@ Module TypeClasses2.
   |}.
 
   #[export]
+  Instance nat_Z_add: AddOperation nat Z (fun _ _ => Z) := {|
+    add a b := (Z.of_nat a + b)%Z;
+  |}.
+
+  #[export]
   #[universes(polymorphic)]
   Instance type_add@{U}: TypeAddOperation@{U} Type@{U} Type@{U} := {|
     add_type (A: Type@{U}) (B: Type@{U}) := (A + B)%type;
@@ -348,6 +363,8 @@ Module TypeClasses2.
   Definition add_ints (a b: Z) := a [+] b.
 
   Definition add_Z_nat (a: Z) (b: nat) := a [+] b.
+
+  Definition add_nat_Z (a: nat) (b: Z) := a [+] b.
 
   (* (A [+] B) fails outside of the type scope. *)
   Fail Definition list_of_n_sum_types (A B: Type) (n: nat) : list Type :=
@@ -476,6 +493,9 @@ Module TypeClasses3.
   Instance Z_nat_add: AddOperation Z nat (fun _ _ => Z) := fun a b => (a + Z.of_nat b)%Z.
 
   #[export]
+  Instance nat_Z_add: AddOperation nat Z (fun _ _ => Z) := fun a b => (Z.of_nat a + b)%Z.
+
+  #[export]
   #[universes(polymorphic)]
   Instance type_add@{U}: TypeAddOperation@{U} Type@{U} Type@{U} :=
   fun (A: Type@{U}) (B: Type@{U}) => (A + B)%type.
@@ -485,6 +505,8 @@ Module TypeClasses3.
   Definition add_ints (a b: Z) := a [+] b.
 
   Definition add_Z_nat (a: Z) (b: nat) := a [+] b.
+
+  Definition add_nat_Z (a: nat) (b: Z) := a [+] b.
 
   (* (A [+] B) fails outside of the type scope. *)
   Fail Definition list_of_n_sum_types (A B: Type) (n: nat) : list Type :=
@@ -667,6 +689,12 @@ Module TypeClasses4.
   Instance Z_nat_add: AddOperation Z nat _ := fun a b => (a + Z.of_nat b)%Z.
 
   #[export]
+  Instance nat_Z_add_result: AddOperationResult nat Z := {| add_result _ _ := Z; |}.
+
+  #[export]
+  Instance nat_Z_add: AddOperation nat Z _ := fun a b => (Z.of_nat a + b)%Z.
+
+  #[export]
   #[universes(polymorphic)]
   Instance type_add@{U}
   : TypeAddOperation@{U} Type@{U} Type@{U} :=
@@ -677,6 +705,8 @@ Module TypeClasses4.
   Definition add_ints (a b: Z) := a [+] b.
 
   Definition add_Z_nat (a: Z) (b: nat) := a [+] b.
+
+  Definition add_nat_Z (a: nat) (b: Z) := a [+] b.
 
   (* (A [+] B) fails outside of the type scope. *)
   Fail Definition list_of_n_sum_types (A B: Type) (n: nat) : list Type :=
@@ -934,6 +964,10 @@ Module CanonicalStructures.
     ZAddOperation.op a b := (a + Z.of_nat b)%Z;
   |}.
 
+  Canonical Structure nat_Z_add: NatAddOperation := {|
+    NatAddOperation.op a b := (Z.of_nat a + b)%Z;
+  |}.
+
   Module TypeAddOperation.
     Universe B C.
     #[universes(polymorphic)]
@@ -976,6 +1010,8 @@ Module CanonicalStructures.
   Definition add_ints (a b: Z) := a [+] b.
 
   Definition add_Z_nat (a: Z) (b: nat) := a [+] b.
+
+  Definition add_nat_Z (a: nat) (b: Z) := a [+] b.
 
   (* Passes *)
   Definition list_of_n_sum_types (A B: Type) (n: nat) : list Type :=
@@ -1244,6 +1280,10 @@ Module CanonicalStructuresSimplNever.
     ZAddOperation.op a b := (a + Z.of_nat b)%Z;
   |}.
 
+  Canonical Structure nat_Z_add: NatAddOperation := {|
+    NatAddOperation.op a b := (Z.of_nat a + b)%Z;
+  |}.
+
   Module TypeAddOperation.
     Universe B C.
     #[universes(polymorphic)]
@@ -1286,6 +1326,8 @@ Module CanonicalStructuresSimplNever.
   Definition add_ints (a b: Z) := a [+] b.
 
   Definition add_Z_nat (a: Z) (b: nat) := a [+] b.
+
+  Definition add_nat_Z (a: nat) (b: Z) := a [+] b.
 
   (* Passes *)
   Definition list_of_n_sum_types (A B: Type) (n: nat) : list Type :=
@@ -1605,6 +1647,17 @@ Module TypeClassesCanonicalSignature.
   Instance Z_nat_add: AddOperation (add_signature Z nat (fun _ _ => Z)) :=
   fun a b => (a + Z.of_nat b)%Z.
 
+  #[global]
+  Canonical Structure nat_Z_add_signature: NatAddSignature :=
+  {|
+    NatAddSignature.B := Z;
+    NatAddSignature.C _ _ := Z;
+  |}.
+
+  #[export]
+  Instance nat_Z_add: AddOperation _ :=
+  fun a b => (Z.of_nat a + b)%Z.
+
   Module TypeAddSignature.
     Universe B C.
     #[universes(polymorphic)]
@@ -1651,6 +1704,8 @@ Module TypeClassesCanonicalSignature.
 
   Definition add_Z_nat (a: Z) (b: nat) := a [+] b.
 
+  Definition add_nat_Z (a: nat) (b: Z) := a [+] b.
+
   (* Passes *)
   Definition list_of_n_sum_types (A B: Type) (n: nat) : list Type :=
     repeat (A [+] B) n.
@@ -1688,12 +1743,7 @@ Module TypeClassesCanonicalSignature.
     reflexivity.
   Qed.
 
-  Theorem nat_add_comm: forall m (n: nat), m [+] n = n [+] m.
-  Proof.
-    apply Nat.add_comm.
-  Qed.
-
-  Theorem nat_add_comm': forall (m n: nat), m [+] n = n [+] m.
+  Theorem nat_add_comm: forall (m n: nat), m [+] n = n [+] m.
   Proof.
     apply Nat.add_comm.
   Qed.
@@ -1704,8 +1754,6 @@ Module TypeClassesCanonicalSignature.
     intros.
     (* Ideally this would work. *)
     Fail rewrite nat_add_comm.
-    (* Ideally this would work. *)
-    Fail rewrite nat_add_comm'.
   Abort.
 
   Theorem nat_le_reflexive: forall (n: nat), n <== n.
@@ -1722,8 +1770,7 @@ Module TypeClassesCanonicalSignature.
   Qed.
 End TypeClassesCanonicalSignature.
 
-(* nat_add_0_r half passes.
- *)
+(* Passes *)
 Module TypeClassesUnfoldResult.
   Declare Scope operation_scope.
   Delimit Scope operation_scope with operation.
@@ -1991,6 +2038,17 @@ Module TypeClassesUnfoldResult.
   Instance Z_nat_add: AddOperation (add_signature Z nat (fun _ _ => Z)) :=
   fun a b => (a + Z.of_nat b)%Z.
 
+  #[global]
+  Canonical Structure nat_Z_add_signature: NatAddSignature :=
+  {|
+    NatAddSignature.B := Z;
+    NatAddSignature.C _ _ := Z;
+  |}.
+
+  #[export]
+  Instance nat_Z_add: AddOperation _ :=
+  fun a b => (Z.of_nat a + b)%Z.
+
   Module TypeAddSignature.
     Universe B C.
     #[universes(polymorphic)]
@@ -2037,6 +2095,8 @@ Module TypeClassesUnfoldResult.
 
   Definition add_Z_nat (a: Z) (b: nat) := a [+] b.
 
+  Definition add_nat_Z (a: nat) (b: Z) := a [+] b.
+
   (* Passes *)
   Definition list_of_n_sum_types (A B: Type) (n: nat) : list Type :=
     repeat (A [+] B) n.
@@ -2074,23 +2134,16 @@ Module TypeClassesUnfoldResult.
     reflexivity.
   Qed.
 
-  Theorem nat_add_comm: forall m (n: nat), m [+] n = n [+] m.
+  Theorem nat_add_comm: forall (m n: nat), m [+] n = n [+] m.
   Proof.
     apply Nat.add_comm.
   Qed.
 
-  Theorem nat_add_comm': forall (m n: nat), m [+] n = n [+] m.
-  Proof.
-    apply Nat.add_comm.
-  Qed.
-
-  (* Half passes. Needs nat_add_comm' instead of nat_add_comm. *)
+  (* Passes *)
   Theorem nat_add_0_r : forall (n: nat), n [+] 0 = n.
   Proof.
     intros.
-    (* Ideally this would work. *)
-    Fail rewrite nat_add_comm.
-    rewrite nat_add_comm'.
+    rewrite nat_add_comm.
     reflexivity.
   Qed.
 
