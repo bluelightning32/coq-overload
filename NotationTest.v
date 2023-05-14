@@ -81,32 +81,32 @@ Module TypeClasses1.
   Open Scope operation_scope.
 
   Class LEOperation (A B: Type) := {
-    result: Type;
-    le: A -> B -> result;
+    le_result: Type;
+    le: A -> B -> le_result;
   }.
   Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
   #[export]
   Instance nat_le: LEOperation nat nat := {|
-    result := Prop;
+    le_result := Prop;
     le := Nat.le;
   |}.
 
   #[export]
   Instance Z_le: LEOperation Z Z := {|
-    result := Prop;
+    le_result := Prop;
     le := Z.le;
   |}.
 
   #[export]
   Instance Z_nat_le: LEOperation Z nat := {|
-    result:= Prop;
+    le_result := Prop;
     le a b := (a <= Z.of_nat b)%Z;
   |}.
 
   #[export]
   Instance relation_relation_le (A: Type): LEOperation (relation A) (relation A) := {|
-    result:= Prop;
+    le_result := Prop;
     le R S := RelationClasses.subrelation R S;
   |}.
 
@@ -115,7 +115,7 @@ Module TypeClasses1.
   Instance crelation_crelation_le@{Input Output} (A: Type@{Input})
   : LEOperation (crelation@{Input Output} A) (crelation@{Input Output} A) :=
   {|
-    result:= Type@{Output};
+    le_result := Type@{Output};
     le R S := CRelationClasses.subrelation R S;
   |}.
 
@@ -148,8 +148,9 @@ Module TypeClasses1.
     reflexivity.
   Qed.
 
-  Class AddOperation (A B C: Type) := {
-    add: A -> B -> C;
+  Class AddOperation (A B: Type) := {
+    add_result: Type;
+    add: A -> B -> add_result;
   }.
   Infix "[+]" := add (at level 50, left associativity) : operation_scope.
 
@@ -161,17 +162,20 @@ Module TypeClasses1.
   Infix "[+]" := add_type (at level 50, left associativity) : type_scope.
 
   #[export]
-  Instance nat_add: AddOperation nat nat nat := {|
+  Instance nat_add: AddOperation nat nat := {|
+    add_result := nat;
     add := Nat.add;
   |}.
 
   #[export]
-  Instance Z_add: AddOperation Z Z Z := {|
+  Instance Z_add: AddOperation Z Z := {|
+    add_result := Z;
     add a b := (a + b)%Z;
   |}.
 
   #[export]
-  Instance Z_nat_add: AddOperation Z nat Z := {|
+  Instance Z_nat_add: AddOperation Z nat := {|
+    add_result := Z;
     add a b := (a + Z.of_nat b)%Z;
   |}.
 
