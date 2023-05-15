@@ -3,6 +3,7 @@ Require Import List.
 Require Import Relations.
 Require Import RelationClasses.
 Require Import CRelationClasses.
+Require Import Constructive_sets.
 
 Module NativeNotations.
   Declare Scope nat_op_scope.
@@ -15,6 +16,14 @@ Module NativeNotations.
   Declare Scope Z_op_scope.
   Delimit Scope Z_op_scope with Z_op.
   Open Scope Z_op_scope.
+
+  Declare Scope list_op_scope.
+  Delimit Scope list_op_scope with list_op.
+  Open Scope list_op_scope.
+
+  Declare Scope ensemble_op_scope.
+  Delimit Scope ensemble_op_scope with ensemble_op.
+  Open Scope ensemble_op_scope.
 
   Infix "<==" := Z.le (at level 70, no associativity) : Z_op_scope.
 
@@ -71,6 +80,28 @@ Module NativeNotations.
     rewrite Nat.add_0_r.
     reflexivity.
   Qed.
+
+  Infix "[::]" := cons (at level 60, right associativity) : list_op_scope.
+
+  Definition ensemble_cons {A: Type} (a: A) (e: Ensemble A): Ensemble A :=
+  Add _ e a.
+
+  Infix "[::]" := ensemble_cons (at level 60, right associativity) : ensemble_op_scope.
+
+  Theorem list_in_cons : forall A a (l: list A), List.In a (a [::] l)%list_op.
+  Proof.
+    intros.
+    cbn.
+    left.
+    reflexivity.
+  Qed.
+
+  Theorem ensemble_in_cons
+  : forall A a (e: Ensemble A), Ensembles.In _ (a [::] e)%ensemble_op a.
+  Proof.
+    intros.
+    apply Add_intro2.
+  Qed.
 End NativeNotations.
 
 (* Fails cbn_keeps_le_notation, relations_reflexive, crelations_reflexive,
@@ -119,6 +150,24 @@ Module TypeClasses1.
   {|
     le_result _ _ := Type@{Output};
     le R S := CRelationClasses.subrelation R S;
+  |}.
+
+  (* l1 <= l2, if l1 is a suffix of l2. *)
+  #[export]
+  Instance list_le (A: Type)
+  : LEOperation (list A) (list A) :=
+  {|
+    le_result _ _ := Prop;
+    le l1 l2 := l1 = skipn (length l2 - length l1) l2;
+  |}.
+
+  (* B <= C, if B is a subset of C. *)
+  #[export]
+  Instance ensemble_le (A: Type)
+  : LEOperation (Ensemble A) (Ensemble A) :=
+  {|
+    le_result _ _ := Prop;
+    le B C := Included _ B C;
   |}.
 
   Definition compare_nats (a b: nat) := a <== b.
@@ -243,6 +292,46 @@ Module TypeClasses1.
   Fail Theorem nat_le_reflexive: forall (n: nat), n <== n.
 
   Fail Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
+
+  Class ConsOperation (A B: Type) := {
+    cons_result: A -> B -> Type;
+    cons a b: cons_result a b;
+  }.
+  Infix "[::]" := cons (at level 60, right associativity) : operation_scope.
+
+  #[export]
+  Instance list_cons (A: Type): ConsOperation A (list A) := {|
+    cons_result _ _ := list A;
+    cons := List.cons;
+  |}.
+
+  #[export]
+  Instance ensemble_cons (A: Type)
+  : ConsOperation A (Ensemble A) :=
+  {|
+    cons_result _ _ := Ensemble A;
+    cons := fun a e => Add _ e a;
+  |}.
+
+  Theorem list_in_cons : forall A a (l: list A), List.In a (a [::] l).
+  Proof.
+    intros.
+    cbn.
+    left.
+    reflexivity.
+  Qed.
+
+  Theorem ensemble_in_cons
+  : forall A a (e: Ensemble A), Ensembles.In _ (a [::] e) a.
+  Proof.
+    intros.
+    apply Add_intro2.
+  Qed.
+
+  Fail Theorem list_cons_le : forall A a (l: list A), l <== (a [::] l).
+
+  Fail Theorem ensemble_cons_le
+  : forall A a (e: Ensemble A), e <== (a [::] e).
 End TypeClasses1.
 
 (* Fails cbn_keeps_le_notation, relations_reflexive, crelations_reflexive,
@@ -290,6 +379,22 @@ Module TypeClasses2.
     _ _ (fun _ _ => Type@{Output})
     (fun (R S: crelation@{Input Output} A) =>
        CRelationClasses.subrelation@{Input Output Output} R S).
+
+  (* l1 <= l2, if l1 is a suffix of l2. *)
+  #[export]
+  Instance list_le (A: Type)
+  : LEOperation (list A) (list A) (fun _ _ => Prop) :=
+  {|
+    le l1 l2 := l1 = skipn (length l2 - length l1) l2;
+  |}.
+
+  (* B <= C, if B is a subset of C. *)
+  #[export]
+  Instance ensemble_le (A: Type)
+  : LEOperation (Ensemble A) (Ensemble A) (fun _ _ => Prop) :=
+  {|
+    le B C := Included _ B C;
+  |}.
 
   Definition compare_nats (a b: nat) := a <== b.
 
@@ -408,6 +513,43 @@ Module TypeClasses2.
   Fail Theorem nat_le_reflexive: forall (n: nat), n <== n.
 
   Fail Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
+
+  Class ConsOperation (A B: Type) (C: A -> B -> Type) := {
+    cons a b: C a b;
+  }.
+  Infix "[::]" := cons (at level 60, right associativity) : operation_scope.
+
+  #[export]
+  Instance list_cons (A: Type): ConsOperation A (list A) (fun _ _ => list A) := {|
+    cons := List.cons;
+  |}.
+
+  #[export]
+  Instance ensemble_cons (A: Type)
+  : ConsOperation A (Ensemble A) (fun _ _ => Ensemble A) :=
+  {|
+    cons := fun a e => Add _ e a;
+  |}.
+
+  Theorem list_in_cons : forall A a (l: list A), List.In a (a [::] l).
+  Proof.
+    intros.
+    cbn.
+    left.
+    reflexivity.
+  Qed.
+
+  Theorem ensemble_in_cons
+  : forall A a (e: Ensemble A), Ensembles.In _ (a [::] e) a.
+  Proof.
+    intros.
+    apply Add_intro2.
+  Qed.
+
+  Fail Theorem list_cons_le : forall A a (l: list A), l <== (a [::] l).
+
+  Fail Theorem ensemble_cons_le
+  : forall A a (e: Ensemble A), e <== (a [::] e).
 End TypeClasses2.
 
 (* Fails relations_reflexive, crelations_relfexive, cbn_keeps_le_notation,
@@ -444,6 +586,18 @@ Module TypeClasses3.
                 (fun _ _ => Type@{Output}) :=
   fun (R S: crelation@{Input Output} A) =>
     CRelationClasses.subrelation@{Input Output Output} R S.
+
+  (* l1 <= l2, if l1 is a suffix of l2. *)
+  #[export]
+  Instance list_le (A: Type)
+  : LEOperation (list A) (list A) (fun _ _ => Prop) :=
+  fun l1 l2 => l1 = skipn (length l2 - length l1) l2.
+
+  (* B <= C, if B is a subset of C. *)
+  #[export]
+  Instance ensemble_le (A: Type)
+  : LEOperation (Ensemble A) (Ensemble A) (fun _ _ => Prop) :=
+  fun B C => Included _ B C.
 
   Definition compare_nats (a b: nat) := a <== b.
 
@@ -549,6 +703,39 @@ Module TypeClasses3.
   Fail Theorem nat_le_reflexive: forall (n: nat), n <== n.
 
   Fail Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
+
+  Class ConsOperation (A B: Type) (C: A -> B -> Type) := cons a b: C a b.
+  Infix "[::]" := cons (at level 60, right associativity) : operation_scope.
+
+  #[export]
+  Instance list_cons (A: Type)
+  : ConsOperation A (list A) (fun _ _ => list A) :=
+  List.cons.
+
+  #[export]
+  Instance ensemble_cons (A: Type)
+  : ConsOperation A (Ensemble A) (fun _ _ => Ensemble A) :=
+  fun a e => Add _ e a.
+
+  Theorem list_in_cons : forall A a (l: list A), List.In a (a [::] l).
+  Proof.
+    intros.
+    cbn.
+    left.
+    reflexivity.
+  Qed.
+
+  Theorem ensemble_in_cons
+  : forall A a (e: Ensemble A), Ensembles.In _ (a [::] e) a.
+  Proof.
+    intros.
+    apply Add_intro2.
+  Qed.
+
+  Fail Theorem list_cons_le : forall A a (l: list A), l <== (a [::] l).
+
+  Fail Theorem ensemble_cons_le
+  : forall A a (e: Ensemble A), e <== (a [::] e).
 End TypeClasses3.
 
 (* Fails relations_reflexive, crelations_reflexive, nat_le_reflexive, and
@@ -626,6 +813,32 @@ Module TypeClasses4.
                 (crelation_crelation_le_result@{Input Output} A) :=
   fun (R S: crelation@{Input Output} A) =>
     CRelationClasses.subrelation@{Input Output Output} R S.
+
+  #[export]
+  Instance list_list_le_result (A: Type)
+  : LEOperationResult (list A) (list A) :=
+  {|
+    le_result _ _ := Prop;
+  |}.
+
+  (* l1 <= l2, if l1 is a suffix of l2. *)
+  #[export]
+  Instance list_list_le (A: Type)
+  : LEOperation (list A) (list A) (list_list_le_result A) :=
+  fun l1 l2 => l1 = skipn (length l2 - length l1) l2.
+
+  #[export]
+  Instance ensemble_ensemble_le_result (A: Type)
+  : LEOperationResult (Ensemble A) (Ensemble A) :=
+  {|
+    le_result _ _ := Prop;
+  |}.
+
+  (* B <= C, if B is a subset of C. *)
+  #[export]
+  Instance ensemble_le (A: Type)
+  : LEOperation (Ensemble A) (Ensemble A) (ensemble_ensemble_le_result A) :=
+  fun B C => Included _ B C.
 
   Definition compare_nats (a b: nat) := a <== b.
 
@@ -749,9 +962,54 @@ Module TypeClasses4.
   Fail Theorem nat_le_reflexive: forall (n: nat), n <== n.
 
   Fail Theorem nat_plus_0_r_le : forall (n: nat), n [+] 0 <== n.
+
+  Class ConsOperationResult (A B: Type) := {
+    cons_result: A -> B -> Type;
+  }.
+  Arguments cons_result : simpl never.
+
+  Class ConsOperation (A B: Type) (C: ConsOperationResult A B) :=
+  cons: forall a b, cons_result a b.
+  Infix "[::]" := cons (at level 60, right associativity) : operation_scope.
+
+  #[export]
+  Instance list_cons_result (A: Type)
+  : ConsOperationResult A (list A) := {| cons_result _ _ := list A; |}.
+
+  #[export]
+  Instance list_cons (A: Type): ConsOperation A (list A) _ := List.cons.
+
+  #[export]
+  Instance ensemble_cons_result (A: Type)
+  : ConsOperationResult A (Ensemble A) := {| cons_result _ _ := Ensemble A; |}.
+
+  #[export]
+  Instance ensemble_cons (A: Type)
+  : ConsOperation A (Ensemble A) _ := fun a e => Add _ e a.
+
+  Theorem list_in_cons : forall A a (l: list A), List.In a (a [::] l).
+  Proof.
+    intros.
+    cbn.
+    left.
+    reflexivity.
+  Qed.
+
+  Theorem ensemble_in_cons
+  : forall A a (e: Ensemble A), Ensembles.In _ (a [::] e) a.
+  Proof.
+    intros.
+    apply Add_intro2.
+  Qed.
+
+  Fail Theorem list_cons_le : forall A a (l: list A), l <== (a [::] l).
+
+  Fail Theorem ensemble_cons_le
+  : forall A a (e: Ensemble A), e <== (a [::] e).
 End TypeClasses4.
 
-(* Fails cbn_keeps_le_notation, R_le_empty, and empty_le_r. *)
+(* Fails cbn_keeps_le_notation, R_le_empty, empty_le_r,
+   cbn_keeps_cons_notation, and cbn_keeps_cons_notation'. *)
 Module CanonicalStructures.
   Declare Scope operation_scope.
   Delimit Scope operation_scope with operation.
@@ -1059,6 +1317,136 @@ Module CanonicalStructures.
   Proof.
     intros.
     rewrite Nat.add_0_r.
+    reflexivity.
+  Qed.
+
+  Module ConsOperation.
+    Structure ConsOperation := {
+      A: Type;
+      B: Type;
+      C: A -> B -> Type;
+      #[canonical=no] op: forall a b, C a b;
+    }.
+  End ConsOperation.
+  Export ConsOperation(ConsOperation).
+
+  Definition cons {o: ConsOperation} := o.(ConsOperation.op).
+
+  Infix "[::]" := cons (at level 60, right associativity) : operation_scope.
+
+  Module AnyConsOperation.
+    Structure AnyConsOperation (A: Type) := {
+      B: Type;
+      #[canonical=no] C: A -> B -> Type;
+      #[canonical=no] op: forall a b, C a b;
+    }.
+    Arguments B {A}.
+    Arguments C {A}.
+    Arguments op {A}.
+  End AnyConsOperation.
+  Export AnyConsOperation(AnyConsOperation).
+
+  Canonical Structure any_cons (A: Type) (op2: AnyConsOperation A)
+  : ConsOperation :=
+  {|
+    ConsOperation.A := A;
+    ConsOperation.C := op2.(AnyConsOperation.C);
+    ConsOperation.op := op2.(AnyConsOperation.op);
+  |}.
+
+  Canonical Structure any_list_cons (A: Type): AnyConsOperation A := {|
+    AnyConsOperation.B := list A;
+    AnyConsOperation.op := List.cons;
+  |}.
+
+  Definition list_no_match (A: Type) := A.
+
+  Canonical Structure list_cons (A: Type)
+  : ConsOperation :=
+  {|
+    ConsOperation.A := list_no_match A;
+    ConsOperation.B := list A;
+    ConsOperation.C _ _ := list A;
+    ConsOperation.op := List.cons;
+  |}.
+
+  Canonical Structure any_Ensemble_cons (A: Type): AnyConsOperation A := {|
+    AnyConsOperation.B := Ensemble A;
+    AnyConsOperation.op a e := Add _ e a;
+  |}.
+
+  Definition Ensemble_no_match (A: Type) := A.
+
+  Canonical Structure Ensemble_cons (A: Type)
+  : ConsOperation :=
+  {|
+    ConsOperation.A := Ensemble_no_match A;
+    ConsOperation.B := Ensemble A;
+    ConsOperation.C _ _ := Ensemble A;
+    ConsOperation.op a e := Add _ e a;
+  |}.
+
+  Theorem list_in_cons : forall A (a: A) (l: list A), List.In a (a [::] l).
+  Proof.
+    intros.
+    match goal with
+    | |- context [a [::] l] => idtac
+    end.
+    cbn.
+    left.
+    reflexivity.
+  Qed.
+
+  Theorem list_in_cons' : forall A a (l: list A), List.In a (a [::] l).
+  Proof.
+    intros.
+    match goal with
+    | |- context [a [::] l] => idtac
+    end.
+    cbn.
+    left.
+    reflexivity.
+  Qed.
+
+  Theorem ensemble_in_cons
+  : forall A (a: A) (e: Ensemble A), Ensembles.In _ (a [::] e) a.
+  Proof.
+    intros.
+    match goal with
+    | |- context [a [::] e] => idtac
+    end.
+    apply Add_intro2.
+  Qed.
+
+  Theorem ensemble_in_cons'
+  : forall A a (e: Ensemble A), Ensembles.In _ (a [::] e) a.
+  Proof.
+    intros.
+    match goal with
+    | |- context [a [::] e] => idtac
+    end.
+    apply Add_intro2.
+  Qed.
+
+  (* Fails *)
+  Theorem cbn_keeps_cons_notation: forall A a (l: list A), a [::] l = a [::] l.
+  Proof.
+    intros.
+    cbn.
+    Fail match goal with
+    | |- context [a [::] l] => idtac
+    end.
+    reflexivity.
+  Qed.
+
+  (* Fails *)
+  Theorem cbn_keeps_cons_notation': forall A (a: A) (l: list A), a [::] l = a [::] l.
+  Proof.
+    intros.
+    cbn.
+    Fail match goal with
+    | |- context [a [::] l] => idtac
+    end.
     reflexivity.
   Qed.
 End CanonicalStructures.
@@ -1375,6 +1763,136 @@ Module CanonicalStructuresSimplNever.
   Proof.
     intros.
     rewrite Nat.add_0_r.
+    reflexivity.
+  Qed.
+
+  Module ConsOperation.
+    Structure ConsOperation := {
+      A: Type;
+      B: Type;
+      C: A -> B -> Type;
+      #[canonical=no] op: forall a b, C a b;
+    }.
+    Arguments C: simpl never.
+    Arguments op : simpl never.
+  End ConsOperation.
+  Export ConsOperation(ConsOperation).
+
+  Definition cons {o: ConsOperation} := o.(ConsOperation.op).
+
+  Infix "[::]" := cons (at level 60, right associativity) : operation_scope.
+
+  Module AnyConsOperation.
+    Structure AnyConsOperation (A: Type) := {
+      B: Type;
+      #[canonical=no] C: A -> B -> Type;
+      #[canonical=no] op: forall a b, C a b;
+    }.
+    Arguments B {A}.
+    Arguments C {A}.
+    Arguments op {A}.
+  End AnyConsOperation.
+  Export AnyConsOperation(AnyConsOperation).
+
+  Canonical Structure any_cons (A: Type) (op2: AnyConsOperation A)
+  : ConsOperation :=
+  {|
+    ConsOperation.A := A;
+    ConsOperation.C := op2.(AnyConsOperation.C);
+    ConsOperation.op := op2.(AnyConsOperation.op);
+  |}.
+
+  Canonical Structure any_list_cons (A: Type): AnyConsOperation A := {|
+    AnyConsOperation.B := list A;
+    AnyConsOperation.op := List.cons;
+  |}.
+
+  Definition list_no_match (A: Type) := A.
+
+  Canonical Structure list_cons (A: Type)
+  : ConsOperation :=
+  {|
+    ConsOperation.A := list_no_match A;
+    ConsOperation.B := list A;
+    ConsOperation.C _ _ := list A;
+    ConsOperation.op := List.cons;
+  |}.
+
+  Canonical Structure any_Ensemble_cons (A: Type): AnyConsOperation A := {|
+    AnyConsOperation.B := Ensemble A;
+    AnyConsOperation.op a e := Add _ e a;
+  |}.
+
+  Definition Ensemble_no_match (A: Type) := A.
+
+  Canonical Structure Ensemble_cons (A: Type)
+  : ConsOperation :=
+  {|
+    ConsOperation.A := Ensemble_no_match A;
+    ConsOperation.B := Ensemble A;
+    ConsOperation.C _ _ := Ensemble A;
+    ConsOperation.op a e := Add _ e a;
+  |}.
+
+  Theorem list_in_cons : forall A (a: A) (l: list A), List.In a (a [::] l).
+  Proof.
+    intros.
+    match goal with
+    | |- context [a [::] l] => idtac
+    end.
+    cbn.
+    left.
+    reflexivity.
+  Qed.
+
+  Theorem list_in_cons' : forall A a (l: list A), List.In a (a [::] l).
+  Proof.
+    intros.
+    match goal with
+    | |- context [a [::] l] => idtac
+    end.
+    cbn.
+    left.
+    reflexivity.
+  Qed.
+
+  Theorem ensemble_in_cons
+  : forall A (a: A) (e: Ensemble A), Ensembles.In _ (a [::] e) a.
+  Proof.
+    intros.
+    match goal with
+    | |- context [a [::] e] => idtac
+    end.
+    apply Add_intro2.
+  Qed.
+
+  Theorem ensemble_in_cons'
+  : forall A a (e: Ensemble A), Ensembles.In _ (a [::] e) a.
+  Proof.
+    intros.
+    match goal with
+    | |- context [a [::] e] => idtac
+    end.
+    apply Add_intro2.
+  Qed.
+
+  Theorem cbn_keeps_cons_notation: forall A a (l: list A), a [::] l = a [::] l.
+  Proof.
+    intros.
+    cbn.
+    match goal with
+    | |- context [a [::] l] => idtac
+    end.
+    reflexivity.
+  Qed.
+
+  Theorem cbn_keeps_cons_notation': forall A (a: A) (l: list A), a [::] l = a [::] l.
+  Proof.
+    intros.
+    cbn.
+    match goal with
+    | |- context [a [::] l] => idtac
+    end.
     reflexivity.
   Qed.
 End CanonicalStructuresSimplNever.
@@ -1768,6 +2286,140 @@ Module TypeClassesCanonicalSignature.
     rewrite Nat.add_0_r.
     reflexivity.
   Qed.
+
+  Module ConsSignature.
+    Structure ConsSignature := {
+      A: Type;
+      B: Type;
+      C: A -> B -> Type;
+    }.
+    Arguments C : simpl never.
+  End ConsSignature.
+  Export ConsSignature(ConsSignature).
+
+  Class ConsOperation (r: ConsSignature) :=
+  cons: forall (a: r.(ConsSignature.A)) (b: r.(ConsSignature.B)),
+       r.(ConsSignature.C) a b.
+  Infix "[::]" := cons (at level 60, right associativity) : operation_scope.
+
+  Module AnyConsSignature.
+    Structure AnyConsSignature (A: Type) := {
+      B: Type;
+      #[canonical=no] C: A -> B -> Type;
+    }.
+    Arguments B {A}.
+    Arguments C {A}.
+  End AnyConsSignature.
+  Export AnyConsSignature(AnyConsSignature).
+
+  Canonical Structure any_cons (A: Type) (op2: AnyConsSignature A)
+  : ConsSignature :=
+  {|
+    ConsSignature.A := A;
+    ConsSignature.C := op2.(AnyConsSignature.C);
+  |}.
+
+  Canonical Structure any_list_cons_signature (A: Type): AnyConsSignature A := {|
+    AnyConsSignature.B := list A;
+    AnyConsSignature.C _ _ := list A;
+  |}.
+
+  Definition list_no_match (A: Type) := A.
+
+  Canonical Structure list_cons_signature (A: Type)
+  : ConsSignature :=
+  {|
+    ConsSignature.A := list_no_match A;
+    ConsSignature.B := list A;
+    ConsSignature.C _ _ := list A;
+  |}.
+
+  #[export]
+  Instance any_list_cons (A: Type)
+  : ConsOperation (list_cons_signature A) :=
+  List.cons.
+
+  Canonical Structure any_Ensemble_cons_signature (A: Type): AnyConsSignature A := {|
+    AnyConsSignature.B := Ensemble A;
+    AnyConsSignature.C _ _ := Ensemble A;
+  |}.
+
+  Definition Ensemble_no_match (A: Type) := A.
+
+  Canonical Structure Ensemble_cons_signature (A: Type)
+  : ConsSignature :=
+  {|
+    ConsSignature.A := Ensemble_no_match A;
+    ConsSignature.B := Ensemble A;
+    ConsSignature.C _ _ := Ensemble A;
+  |}.
+
+  #[export]
+  Instance any_Ensemble_cons (A: Type)
+  : ConsOperation (Ensemble_cons_signature A) :=
+  fun a e => Add _ e a.
+
+  Theorem list_in_cons : forall A (a: A) (l: list A), List.In a (a [::] l).
+  Proof.
+    intros.
+    match goal with
+    | |- context [a [::] l] => idtac
+    end.
+    cbn.
+    left.
+    reflexivity.
+  Qed.
+
+  Theorem list_in_cons' : forall A a (l: list A), List.In a (a [::] l).
+  Proof.
+    intros.
+    match goal with
+    | |- context [a [::] l] => idtac
+    end.
+    cbn.
+    left.
+    reflexivity.
+  Qed.
+
+  Theorem ensemble_in_cons
+  : forall A (a: A) (e: Ensemble A), Ensembles.In _ (a [::] e) a.
+  Proof.
+    intros.
+    match goal with
+    | |- context [a [::] e] => idtac
+    end.
+    apply Add_intro2.
+  Qed.
+
+  Theorem ensemble_in_cons'
+  : forall A a (e: Ensemble A), Ensembles.In _ (a [::] e) a.
+  Proof.
+    intros.
+    match goal with
+    | |- context [a [::] e] => idtac
+    end.
+    apply Add_intro2.
+  Qed.
+
+  Theorem cbn_keeps_cons_notation: forall A a (l: list A), a [::] l = a [::] l.
+  Proof.
+    intros.
+    cbn.
+    match goal with
+    | |- context [a [::] l] => idtac
+    end.
+    reflexivity.
+  Qed.
+
+  Theorem cbn_keeps_cons_notation': forall A (a: A) (l: list A), a [::] l = a [::] l.
+  Proof.
+    intros.
+    cbn.
+    match goal with
+    | |- context [a [::] l] => idtac
+    end.
+    reflexivity.
+  Qed.
 End TypeClassesCanonicalSignature.
 
 (* Passes *)
@@ -2001,7 +2653,8 @@ Module TypeClassesUnfoldResult.
 
   Class AddOperation (r: AddSignature) :=
   add: forall (a: r.(AddSignature.A)) (b: r.(AddSignature.B)),
-       (let '{| AddSignature.C := C; |} := r in C) a b.
+       (let '{| AddSignature.C := C; |} := r
+            return r.(AddSignature.A) -> r.(AddSignature.B) -> Type in C) a b.
   Infix "[+]" := add (at level 50, left associativity) : operation_scope.
 
   Module NatAddSignature.
@@ -2157,6 +2810,142 @@ Module TypeClassesUnfoldResult.
   Proof.
     intros.
     rewrite Nat.add_0_r.
+    reflexivity.
+  Qed.
+
+  Module ConsSignature.
+    Structure ConsSignature := {
+      A: Type;
+      B: Type;
+      #[canonical=no] C: A -> B -> Type;
+    }.
+    Arguments C : simpl never.
+  End ConsSignature.
+  Export ConsSignature(ConsSignature).
+
+  Class ConsOperation (r: ConsSignature) :=
+  cons: forall (a: r.(ConsSignature.A)) (b: r.(ConsSignature.B)),
+        (let '{| ConsSignature.C := C; |} := r
+             return r.(ConsSignature.A) -> r.(ConsSignature.B) -> Type in C)
+          a b.
+  Infix "[::]" := cons (at level 60, right associativity) : operation_scope.
+
+  Module AnyConsSignature.
+    Structure AnyConsSignature (A: Type) := {
+      B: Type;
+      #[canonical=no] C: A -> B -> Type;
+    }.
+    Arguments B {A}.
+    Arguments C {A}.
+  End AnyConsSignature.
+  Export AnyConsSignature(AnyConsSignature).
+
+  Canonical Structure any_cons (A: Type) (op2: AnyConsSignature A)
+  : ConsSignature :=
+  {|
+    ConsSignature.A := A;
+    ConsSignature.C := op2.(AnyConsSignature.C);
+  |}.
+
+  Canonical Structure any_list_cons_signature (A: Type): AnyConsSignature A := {|
+    AnyConsSignature.B := list A;
+    AnyConsSignature.C _ _ := list A;
+  |}.
+
+  Definition list_no_match (A: Type) := A.
+
+  Canonical Structure list_cons_signature (A: Type)
+  : ConsSignature :=
+  {|
+    ConsSignature.A := list_no_match A;
+    ConsSignature.B := list A;
+    ConsSignature.C _ _ := list A;
+  |}.
+
+  #[export]
+  Instance any_list_cons (A: Type)
+  : ConsOperation (list_cons_signature A) :=
+  List.cons.
+
+  Canonical Structure any_Ensemble_cons_signature (A: Type): AnyConsSignature A := {|
+    AnyConsSignature.B := Ensemble A;
+    AnyConsSignature.C _ _ := Ensemble A;
+  |}.
+
+  Definition Ensemble_no_match (A: Type) := A.
+
+  Canonical Structure Ensemble_cons_signature (A: Type)
+  : ConsSignature :=
+  {|
+    ConsSignature.A := Ensemble_no_match A;
+    ConsSignature.B := Ensemble A;
+    ConsSignature.C _ _ := Ensemble A;
+  |}.
+
+  #[export]
+  Instance any_Ensemble_cons (A: Type)
+  : ConsOperation (Ensemble_cons_signature A) :=
+  fun a e => Add _ e a.
+
+  Theorem list_in_cons : forall A (a: A) (l: list A), List.In a (a [::] l).
+  Proof.
+    intros.
+    match goal with
+    | |- context [a [::] l] => idtac
+    end.
+    cbn.
+    left.
+    reflexivity.
+  Qed.
+
+  Theorem list_in_cons' : forall A a (l: list A), List.In a (a [::] l).
+  Proof.
+    intros.
+    match goal with
+    | |- context [a [::] l] => idtac
+    end.
+    cbn.
+    left.
+    reflexivity.
+  Qed.
+
+  Theorem ensemble_in_cons
+  : forall A (a: A) (e: Ensemble A), Ensembles.In _ (a [::] e) a.
+  Proof.
+    intros.
+    match goal with
+    | |- context [a [::] e] => idtac
+    end.
+    apply Add_intro2.
+  Qed.
+
+  Theorem ensemble_in_cons'
+  : forall A a (e: Ensemble A), Ensembles.In _ (a [::] e) a.
+  Proof.
+    intros.
+    match goal with
+    | |- context [a [::] e] => idtac
+    end.
+    apply Add_intro2.
+  Qed.
+
+  Theorem cbn_keeps_cons_notation: forall A a (l: list A), a [::] l = a [::] l.
+  Proof.
+    intros.
+    cbn.
+    match goal with
+    | |- context [a [::] l] => idtac
+    end.
+    reflexivity.
+  Qed.
+
+  Theorem cbn_keeps_cons_notation': forall A (a: A) (l: list A), a [::] l = a [::] l.
+  Proof.
+    intros.
+    cbn.
+    match goal with
+    | |- context [a [::] l] => idtac
+    end.
     reflexivity.
   Qed.
 
