@@ -1008,8 +1008,8 @@ Module TypeClasses4.
   : forall A a (e: Ensemble A), e <== (a [::] e).
 End TypeClasses4.
 
-(* Fails cbn_keeps_le_notation, R_le_empty, empty_le_r,
-   cbn_keeps_cons_notation, and cbn_keeps_cons_notation'. *)
+(* Fails cbn_keeps_le_notation, cbn_keeps_cons_notation, and
+   cbn_keeps_cons_notation'. *)
 Module CanonicalStructures.
   Declare Scope operation_scope.
   Delimit Scope operation_scope with operation.
@@ -1071,61 +1071,25 @@ Module CanonicalStructures.
     ZLEOperation.op a b := (a <= Z.of_nat b)%Z;
   |}.
 
-  Module RelationLEOperation.
-    Structure RelationLEOperation (A: Type) := {
-      B: Type;
-      #[canonical=no] C: relation A -> B -> Type;
-      #[canonical=no] op: forall a b, C a b;
-    }.
-    Arguments B {A}.
-    Arguments C {A}.
-    Arguments op {A}.
-  End RelationLEOperation.
-  Export RelationLEOperation(RelationLEOperation).
-
-  Canonical Structure relation_le (A: Type) (op2: RelationLEOperation A)
+  Canonical Structure relation_relation_le (A: Type)
   : LEOperation :=
   {|
     LEOperation.A := relation A;
-    LEOperation.op:= op2.(RelationLEOperation.op);
-  |}.
-
-  Canonical Structure relation_relation_le (A: Type)
-  : RelationLEOperation A :=
-  {|
-    RelationLEOperation.op R S := RelationClasses.subrelation R S;
-  |}.
-
-  Module CRelationLEOperation.
-    #[universes(polymorphic)]
-    Structure CRelationLEOperation@{Input Output B C} (A: Type@{Input}) := {
-      B: Type@{B};
-      #[canonical=no] C: crelation@{Input Output} A -> B -> Type@{C};
-      #[canonical=no] op: forall a b, C a b;
-    }.
-    Arguments B {A}.
-    Arguments C {A}.
-    Arguments op {A}.
-  End CRelationLEOperation.
-  Export CRelationLEOperation(CRelationLEOperation).
-
-  #[universes(polymorphic)]
-  Canonical Structure crelation_le@{Input Output B C} (A: Type@{Input})
-    (op2: CRelationLEOperation@{Input Output B C} A)
-  : LEOperation :=
-  {|
-    LEOperation.A := crelation A;
-    LEOperation.op:= op2.(CRelationLEOperation.op);
+    LEOperation.B := relation A;
+    LEOperation.C _ _ := Prop;
+    LEOperation.op R S := RelationClasses.subrelation R S;
   |}.
 
   #[universes(polymorphic)]
   Canonical Structure crelation_crelation_le@{Input Output1 CRelationB Output2
                                               Result ResultContainer}
     (A: Type@{Input})
-  : CRelationLEOperation@{Input Output1 CRelationB ResultContainer} A :=
+  : LEOperation :=
   {|
-    CRelationLEOperation.C _ _ := Type@{Result};
-    CRelationLEOperation.op R S := CRelationClasses.subrelation@{Input Output1 Output2} R S;
+    LEOperation.A := crelation A;
+    LEOperation.B := crelation A;
+    LEOperation.C _ _ := Type@{Result};
+    LEOperation.op R S := CRelationClasses.subrelation@{Input Output1 Output2} R S;
   |}.
 
   Definition compare_nats (a b: nat) := a <== b.
@@ -1150,14 +1114,25 @@ Module CanonicalStructures.
 
   (* Tests that the type of R can be inferred when it is on the left side of
      _ <== _ . *)
-  Fail Theorem R_le_empty (A: Type) R
+  Theorem R_le_empty (A: Type) R
     : R <== empty_relation A ->
       RelationClasses.relation_equivalence R (empty_relation A).
+  Proof.
+    intros Hempty.
+    eapply RelationClasses.antisymmetry.
+    - apply Hempty.
+    - intros x y Hxy.
+      destruct Hxy.
+  Qed.
 
   (* Tests that the type of R can be inferred when it is on the right side of
      _ <== _ . *)
-  Fail Theorem empty_le_r (A: Type) R
+  Theorem empty_le_r (A: Type) R
     : empty_relation A <== R.
+  Proof.
+    intros x y Hxy.
+    destruct Hxy.
+  Qed.
 
   (* Fails *)
   Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
@@ -1451,7 +1426,7 @@ Module CanonicalStructures.
   Qed.
 End CanonicalStructures.
 
-(* Fails R_le_empty, empty_le_r, and cbn_simplifies_addition. *)
+(* Fails cbn_simplifies_addition. *)
 Module CanonicalStructuresSimplNever.
   Declare Scope operation_scope.
   Delimit Scope operation_scope with operation.
@@ -1515,61 +1490,25 @@ Module CanonicalStructuresSimplNever.
     ZLEOperation.op a b := (a <= Z.of_nat b)%Z;
   |}.
 
-  Module RelationLEOperation.
-    Structure RelationLEOperation (A: Type) := {
-      B: Type;
-      #[canonical=no] C: relation A -> B -> Type;
-      #[canonical=no] op: forall a b, C a b;
-    }.
-    Arguments B {A}.
-    Arguments C {A}.
-    Arguments op {A}.
-  End RelationLEOperation.
-  Export RelationLEOperation(RelationLEOperation).
-
-  Canonical Structure relation_le (A: Type) (op2: RelationLEOperation A)
+  Canonical Structure relation_relation_le (A: Type)
   : LEOperation :=
   {|
     LEOperation.A := relation A;
-    LEOperation.op:= op2.(RelationLEOperation.op);
-  |}.
-
-  Canonical Structure relation_relation_le (A: Type)
-  : RelationLEOperation A :=
-  {|
-    RelationLEOperation.op R S := RelationClasses.subrelation R S;
-  |}.
-
-  Module CRelationLEOperation.
-    #[universes(polymorphic)]
-    Structure CRelationLEOperation@{Input Output B C} (A: Type@{Input}) := {
-      B: Type@{B};
-      #[canonical=no] C: crelation@{Input Output} A -> B -> Type@{C};
-      #[canonical=no] op: forall a b, C a b;
-    }.
-    Arguments B {A}.
-    Arguments C {A}.
-    Arguments op {A}.
-  End CRelationLEOperation.
-  Export CRelationLEOperation(CRelationLEOperation).
-
-  #[universes(polymorphic)]
-  Canonical Structure crelation_le@{Input Output B C} (A: Type@{Input})
-    (op2: CRelationLEOperation@{Input Output B C} A)
-  : LEOperation :=
-  {|
-    LEOperation.A := crelation A;
-    LEOperation.op:= op2.(CRelationLEOperation.op);
+    LEOperation.B := relation A;
+    LEOperation.C _ _ := Prop;
+    LEOperation.op R S := RelationClasses.subrelation R S;
   |}.
 
   #[universes(polymorphic)]
   Canonical Structure crelation_crelation_le@{Input Output1 CRelationB Output2
                                               Result ResultContainer}
     (A: Type@{Input})
-  : CRelationLEOperation@{Input Output1 CRelationB ResultContainer} A :=
+  : LEOperation :=
   {|
-    CRelationLEOperation.C _ _ := Type@{Result};
-    CRelationLEOperation.op R S := CRelationClasses.subrelation@{Input Output1 Output2} R S;
+    LEOperation.A := crelation A;
+    LEOperation.B := crelation A;
+    LEOperation.C _ _ := Type@{Result};
+    LEOperation.op R S := CRelationClasses.subrelation@{Input Output1 Output2} R S;
   |}.
 
   Definition compare_nats (a b: nat) := a <== b.
@@ -1594,14 +1533,25 @@ Module CanonicalStructuresSimplNever.
 
   (* Tests that the type of R can be inferred when it is on the left side of
      _ <== _ . *)
-  Fail Theorem R_le_empty (A: Type) R
+  Theorem R_le_empty (A: Type) R
     : R <== empty_relation A ->
       RelationClasses.relation_equivalence R (empty_relation A).
+  Proof.
+    intros Hempty.
+    eapply RelationClasses.antisymmetry.
+    - apply Hempty.
+    - intros x y Hxy.
+      destruct Hxy.
+  Qed.
 
   (* Tests that the type of R can be inferred when it is on the right side of
      _ <== _ . *)
-  Fail Theorem empty_le_r (A: Type) R
+  Theorem empty_le_r (A: Type) R
     : empty_relation A <== R.
+  Proof.
+    intros x y Hxy.
+    destruct Hxy.
+  Qed.
 
   (* Passes *)
   Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
@@ -1985,72 +1935,35 @@ Module TypeClassesCanonicalSignature.
   Instance Z_nat_le: LEOperation _ :=
   fun a b => (a <= Z.of_nat b)%Z.
 
-  Definition relation_no_match {A: Type} (a: A): A := a.
-
-  (* Declares that anything that takes a relation as the first argument must
-     return a Prop. The second argument is left unconstrained. *)
   #[global]
-  Canonical Structure relation_le_signature1 (A: Type) (B: Type)
+  Canonical Structure relation_le_signature (A: Type)
   : LESignature :=
   {|
     LESignature.A := relation A;
-    LESignature.B := relation_no_match B;
-    LESignature.C _ _:= Prop;
-  |}.
-
-  (* Declares that anything that takes a relation as the second argument must
-     return a Prop. The first argument is left unconstrained. *)
-  #[global]
-  Canonical Structure relation_le_signature2 (A: Type) (B: Type)
-  : LESignature :=
-  {|
-    LESignature.A := relation_no_match A;
-    LESignature.B := relation B;
+    LESignature.B := relation A;
     LESignature.C _ _ := Prop;
   |}.
 
   #[export]
   Instance relation_relation_le1 (A: Type)
-  : LEOperation (relation_le_signature1 _ _) :=
+  : LEOperation (relation_le_signature _) :=
   fun (R S: relation A) => RelationClasses.subrelation R S.
 
-  #[export]
-  Instance relation_relation_le2 (A: Type)
-  : LEOperation (relation_le_signature2 _ _) := relation_relation_le1 A.
-
-  Definition crelation_no_match {A: Type} (a: A): A := a.
-
-  (* Declares that anything that takes a crelation as the first argument must
-     return a Type. The second argument is left unconstrained. *)
   #[global]
   #[universes(polymorphic)]
-  Canonical Structure crelation_le_signature1@{A1 A2 B C}
-    (A: Type@{A1}) (B: Type@{B})
+  Canonical Structure crelation_le_signature@{A1 A2 C}
+    (A: Type@{A1})
   : LESignature :=
   {|
     LESignature.A := crelation@{A1 A2} A;
-    LESignature.B := crelation_no_match B;
-    LESignature.C _ _ := Type@{C};
-  |}.
-
-  (* Declares that anything that takes a crelation as the second argument must
-     return a Type. The first argument is left unconstrained. *)
-  #[global]
-  #[universes(polymorphic)]
-  Canonical Structure crelation_le_signature2@{A B1 B2 C}
-    (A: Type@{A}) (B: Type@{B1})
-  : LESignature :=
-  {|
-    LESignature.A := crelation_no_match A;
-    LESignature.B := crelation@{B1 B2} B;
+    LESignature.B := crelation@{A1 A2} A;
     LESignature.C _ _ := Type@{C};
   |}.
 
   #[export]
   #[universes(polymorphic)]
   Instance crelation_crelation_le@{Input Output CRelation} (A: Type@{Input})
-  : LEOperation (crelation_le_signature1@{Input Output CRelation Output}
-                   A (crelation@{Input Output} A)) :=
+  : LEOperation (crelation_le_signature@{Input Output Output} A) :=
   fun (R S: crelation@{Input Output} A) =>
     CRelationClasses.subrelation@{Input Output Output} R S.
 
@@ -2510,72 +2423,35 @@ Module TypeClassesUnfoldResult.
   Instance Z_nat_le: LEOperation _ :=
   fun a b => (a <= Z.of_nat b)%Z.
 
-  Definition relation_no_match {A: Type} (a: A): A := a.
-
-  (* Declares that anything that takes a relation as the first argument must
-     return a Prop. The second argument is left unconstrained. *)
   #[global]
-  Canonical Structure relation_le_signature1 (A: Type) (B: Type)
+  Canonical Structure relation_le_signature (A: Type)
   : LESignature :=
   {|
     LESignature.A := relation A;
-    LESignature.B := relation_no_match B;
+    LESignature.B := relation A;
     LESignature.C _ _:= Prop;
   |}.
 
-  (* Declares that anything that takes a relation as the second argument must
-     return a Prop. The first argument is left unconstrained. *)
-  #[global]
-  Canonical Structure relation_le_signature2 (A: Type) (B: Type)
-  : LESignature :=
-  {|
-    LESignature.A := relation_no_match A;
-    LESignature.B := relation B;
-    LESignature.C _ _ := Prop;
-  |}.
-
   #[export]
-  Instance relation_relation_le1 (A: Type)
-  : LEOperation (relation_le_signature1 _ _) :=
+  Instance relation_relation_le (A: Type)
+  : LEOperation (relation_le_signature _) :=
   fun (R S: relation A) => RelationClasses.subrelation R S.
 
-  #[export]
-  Instance relation_relation_le2 (A: Type)
-  : LEOperation (relation_le_signature2 _ _) := relation_relation_le1 A.
-
-  Definition crelation_no_match {A: Type} (a: A): A := a.
-
-  (* Declares that anything that takes a crelation as the first argument must
-     return a Type. The second argument is left unconstrained. *)
   #[global]
   #[universes(polymorphic)]
-  Canonical Structure crelation_le_signature1@{A1 A2 B C}
-    (A: Type@{A1}) (B: Type@{B})
+  Canonical Structure crelation_le_signature@{A1 A2 B C}
+    (A: Type@{A1})
   : LESignature :=
   {|
     LESignature.A := crelation@{A1 A2} A;
-    LESignature.B := crelation_no_match B;
-    LESignature.C _ _ := Type@{C};
-  |}.
-
-  (* Declares that anything that takes a crelation as the second argument must
-     return a Type. The first argument is left unconstrained. *)
-  #[global]
-  #[universes(polymorphic)]
-  Canonical Structure crelation_le_signature2@{A B1 B2 C}
-    (A: Type@{A}) (B: Type@{B1})
-  : LESignature :=
-  {|
-    LESignature.A := crelation_no_match A;
-    LESignature.B := crelation@{B1 B2} B;
+    LESignature.B := crelation@{A1 A2} A;
     LESignature.C _ _ := Type@{C};
   |}.
 
   #[export]
   #[universes(polymorphic)]
   Instance crelation_crelation_le@{Input Output CRelation} (A: Type@{Input})
-  : LEOperation (crelation_le_signature1@{Input Output CRelation Output}
-                   A (crelation@{Input Output} A)) :=
+  : LEOperation (crelation_le_signature@{Input Output CRelation Output} A) :=
   fun (R S: crelation@{Input Output} A) =>
     CRelationClasses.subrelation@{Input Output Output} R S.
 
