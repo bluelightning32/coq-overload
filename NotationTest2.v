@@ -101,13 +101,14 @@ Module TypeClassesTagged.
     |}.
   End BinarySignature.
 
-  Module Type TypeWrapper.
+  Module Type TypeModule.
     Parameter P: Type.
-    Parameter T: P -> Type.
-  End TypeWrapper.
-  Print Module Type TypeWrapper.
+    #[universes(polymorphic)]
+    Parameter T@{U}: P -> Type@{U}.
+  End TypeModule.
+  Print Module Type TypeModule.
 
-  Module BinaryOverloadA (Sig: BinarySignatureType) (T: TypeWrapper).
+  Module BinaryOverload (Sig: BinarySignatureType) (T: TypeModule).
 
     Module Branch.
       Structure S (p: T.P) := {
@@ -146,7 +147,7 @@ Module TypeClassesTagged.
       Branch.B := try_first sig2.(B);
       Branch.C := let '{| C := C; |} := sig2 in C;
     |}.
-  End BinaryOverloadA.
+  End BinaryOverload.
 
   Module LEId: SignatureId.
   End LEId.
@@ -160,12 +161,13 @@ Module TypeClassesTagged.
 
   Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
-  Module NatWrapper<: TypeWrapper.
+  Module NatWrapper<: TypeModule.
     Definition P := unit.
-    Definition T (_: unit) := nat.
+    #[universes(polymorphic)]
+    Definition T@{U} (_: unit) := nat.
   End NatWrapper.
 
-  Module NatLESignature := BinaryOverloadA LESignature NatWrapper.
+  Module NatLESignature := BinaryOverload LESignature NatWrapper.
   Export (canonicals) NatLESignature.
 
   Canonical Structure nat_le_branch (sig2: NatLESignature.Branch tt)
@@ -182,12 +184,13 @@ Module TypeClassesTagged.
   #[export]
   Instance nat_le: LEOperation _ := Nat.le.
 
-  Module ZWrapper<: TypeWrapper.
+  Module ZWrapper<: TypeModule.
     Definition P := unit.
-    Definition T (_: unit) := Z.
+    #[universes(polymorphic)]
+    Definition T@{U} (_: unit) := Z.
   End ZWrapper.
 
-  Module ZLESignature := BinaryOverloadA LESignature ZWrapper.
+  Module ZLESignature := BinaryOverload LESignature ZWrapper.
   Export (canonicals) ZLESignature.
 
   Canonical Structure Z_le_branch (sig2: ZLESignature.Branch tt)
@@ -215,11 +218,9 @@ Module TypeClassesTagged.
   Instance Z_nat_le: LEOperation _ :=
   fun a b => (a <= Z.of_nat b)%Z.
 
-  Module RelationWrapper<: TypeWrapper.
-    Definition P := Type.
-    Definition T := relation.
-  End RelationWrapper.
-
+  (* If the first argument is a relation, the second argument must also be a
+     relation. This restriction is done so that an unknown second argument is
+     unified to a relation. *)
   #[global]
   Canonical Structure relation_relation_le_signature (A: Type)
   : LESignature.Specific :=
@@ -231,6 +232,8 @@ Module TypeClassesTagged.
 
   Definition relation_no_match := try_second.
 
+  (* If the first argument is unknown and the second is a relation, then the
+     first is unified to be a relation. *)
   Canonical Structure unknown_relation_le_signature (A: Type)
   : LESignature.S :=
   {|
