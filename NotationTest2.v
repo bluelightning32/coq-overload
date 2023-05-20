@@ -103,8 +103,7 @@ Module TypeClassesTagged.
 
   Module Type TypeModule.
     Parameter P: Type.
-    #[universes(polymorphic)]
-    Parameter T@{U}: P -> Type@{U}.
+    Parameter T: P -> Type.
   End TypeModule.
   Print Module Type TypeModule.
 
@@ -163,8 +162,7 @@ Module TypeClassesTagged.
 
   Module NatWrapper<: TypeModule.
     Definition P := unit.
-    #[universes(polymorphic)]
-    Definition T@{U} (_: unit) := nat.
+    Definition T (_: unit) := nat.
   End NatWrapper.
 
   Module NatLESignature := BinaryOverload LESignature NatWrapper.
@@ -186,8 +184,7 @@ Module TypeClassesTagged.
 
   Module ZWrapper<: TypeModule.
     Definition P := unit.
-    #[universes(polymorphic)]
-    Definition T@{U} (_: unit) := Z.
+    Definition T (_: unit) := Z.
   End ZWrapper.
 
   Module ZLESignature := BinaryOverload LESignature ZWrapper.
@@ -249,35 +246,34 @@ Module TypeClassesTagged.
 
   #[global]
   #[universes(polymorphic)]
-  Canonical Structure crelation_crelation_le_signature@{A1 A2 B C}
+  Canonical Structure crelation_crelation_le_signature@{A1 A2 CRelation}
     (A: Type@{A1})
   : LESignature.Specific :=
   {|
     LESignature.Specific.A := crelation@{A1 A2} A;
     LESignature.Specific.B := crelation@{A1 A2} A;
-    LESignature.Specific.C _ _ := Type@{C};
+    LESignature.Specific.C _ _ := Type@{CRelation};
   |}.
 
   Definition crelation_no_match := try_second.
 
   #[global]
   #[universes(polymorphic)]
-  Canonical Structure unknown_crelation_le_signature@{A1 A2 B C}
+  Canonical Structure unknown_crelation_le_signature@{A1 A2 CRelation C}
     (A: Type@{A1})
   : LESignature.S :=
   {|
     LESignature.A := crelation_no_match (crelation@{A1 A2} A);
     LESignature.B := crelation@{A1 A2} A;
-    LESignature.C _ _ := Type@{C};
+    LESignature.C _ _ := Type@{CRelation};
   |}.
 
   #[export]
   #[universes(polymorphic)]
-  Instance crelation_crelation_le@{Input Output CRelation} (A: Type@{Input})
+  Instance crelation_crelation_le@{Input Output CRelation Result} (A: Type@{Input})
   : LEOperation
       (LESignature.specific (crelation_crelation_le_signature@{Input Output
-                                                               CRelation
-                                                               Output}
+                                                               CRelation}
                                A)) :=
   fun (R S: crelation@{Input Output} A) =>
     CRelationClasses.subrelation@{Input Output Output} R S.
@@ -335,164 +331,54 @@ Module TypeClassesTagged.
     reflexivity.
   Qed.
 
-  Module AddSignature.
-    Structure AddSignature := {
-      A: TaggedType;
-      B: Type;
-      #[canonical=no] C: untag A -> B -> Type;
-    }.
-    Arguments C : simpl never.
-  End AddSignature.
-  Export AddSignature(AddSignature).
+  Module AddId: SignatureId.
+  End AddId.
+  Module AddSignature := BinarySignature AddId.
+  Export (canonicals) AddSignature.
 
-  Module AnyAddSignature.
-    Structure AnyAddSignature (A: Type) := {
-      B: Type;
-      #[canonical=no] C: A -> B -> Type;
-    }.
-    Arguments B {A}.
-    Arguments C {A}.
-  End AnyAddSignature.
-  Export AnyAddSignature(AnyAddSignature).
-
-  Canonical Structure any_add_signature (A: Type) (sig2: AnyAddSignature A)
-  : AddSignature :=
-  {|
-    AddSignature.A := try_second A;
-    AddSignature.B := sig2.(AnyAddSignature.B);
-    AddSignature.C := let '{| AnyAddSignature.C := C; |} := sig2 in C;
-  |}.
-
-  Module SpecificAddSignature.
-    Structure SpecificAddSignature := {
-      A: Type;
-      B: Type;
-      #[canonical=no] C: A -> B -> Type;
-    }.
-  End SpecificAddSignature.
-  Export SpecificAddSignature(SpecificAddSignature).
-
-  Canonical Structure specific_add_signature (sig2: SpecificAddSignature)
-  : AddSignature :=
-  {|
-    AddSignature.A := try_first sig2.(SpecificAddSignature.A);
-    AddSignature.B := sig2.(SpecificAddSignature.B);
-    AddSignature.C := let '{| SpecificAddSignature.C := C; |} := sig2 in C;
-  |}.
-
-  Class AddOperation (r: AddSignature) :=
+  Class AddOperation (r: AddSignature.S) :=
   add: forall (a: untag r.(AddSignature.A)) (b: r.(AddSignature.B)),
        (let '{| AddSignature.C := C; |} := r
             return untag r.(AddSignature.A) -> r.(AddSignature.B) -> Type in C) a b.
   Infix "[+]" := add (at level 50, left associativity) : operation_scope.
 
-  Module NatAddSignature.
-    Structure NatAddSignature := {
-      B: TaggedType;
-      #[canonical=no] C: nat -> untag B -> Type;
-    }.
-  End NatAddSignature.
-  Export NatAddSignature(NatAddSignature).
-
-  (* TODO *)
-  Definition nat_no_match (B: TaggedType): Type := untag B.
-
-  Canonical Structure nat_add_signature (sig2: NatAddSignature)
-  : SpecificAddSignature :=
-  {|
-    SpecificAddSignature.A := nat;
-    SpecificAddSignature.B := nat_no_match (sig2.(NatAddSignature.B));
-    SpecificAddSignature.C := let '{| NatAddSignature.C := C; |} := sig2 in C;
-  |}.
-
-  Canonical Structure nat_any_add_branch (sig2: AnyAddSignature nat)
-  : NatAddSignature :=
-  {|
-    NatAddSignature.B := try_second sig2.(AnyAddSignature.B);
-    NatAddSignature.C := let '{| AnyAddSignature.C := C; |} := sig2 in C;
-  |}.
-
-  Module NatSpecificAddSignature.
-    Structure NatSpecificAddSignature := {
-      B: Type;
-      #[canonical=no] C: nat -> B -> Type;
-    }.
-  End NatSpecificAddSignature.
-  Export NatSpecificAddSignature(NatSpecificAddSignature).
-
-  Canonical Structure nat_specific_add_signature (sig2: NatSpecificAddSignature)
-  : NatAddSignature :=
-  {|
-    NatAddSignature.B := try_first sig2.(NatSpecificAddSignature.B);
-    NatAddSignature.C := let '{| NatSpecificAddSignature.C := C; |} := sig2 in C;
-  |}.
+  Module NatAddSignature := BinaryOverload AddSignature NatWrapper.
+  Export (canonicals) NatAddSignature.
+  Canonical Structure nat_add_branch (sig2: NatAddSignature.Branch tt)
+  : AddSignature.Specific :=
+  AddSignature.make_specific nat (NatAddSignature.make_branch tt sig2).
 
   #[global]
-  Canonical Structure nat_nat_specific_add_signature: NatSpecificAddSignature :=
+  Canonical Structure nat_nat_add_signature: NatAddSignature.S tt :=
   {|
-    NatSpecificAddSignature.B := nat;
-    NatSpecificAddSignature.C _ _ := nat;
+    NatAddSignature.B := nat;
+    NatAddSignature.C _ _ := nat;
   |}.
 
   #[export]
   Instance nat_add: AddOperation _ := Nat.add.
 
-  Module ZAddSignature.
-    Structure ZAddSignature := {
-      B: TaggedType;
-      #[canonical=no] C: Z -> untag B -> Type;
-    }.
-  End ZAddSignature.
-  Export ZAddSignature(ZAddSignature).
-
-  (* TODO *)
-  Definition Z_no_match (B: TaggedType): Type := untag B.
-
-  Canonical Structure Z_add_signature (sig2: ZAddSignature)
-  : SpecificAddSignature :=
-  {|
-    SpecificAddSignature.A := Z;
-    SpecificAddSignature.B := Z_no_match (sig2.(ZAddSignature.B));
-    SpecificAddSignature.C := let '{| ZAddSignature.C := C; |} := sig2 in C;
-  |}.
-
-  Canonical Structure Z_any_add_branch (sig2: AnyAddSignature Z)
-  : ZAddSignature :=
-  {|
-    ZAddSignature.B := try_second sig2.(AnyAddSignature.B);
-    ZAddSignature.C := let '{| AnyAddSignature.C := C; |} := sig2 in C;
-  |}.
-
-  Module ZSpecificAddSignature.
-    Structure ZSpecificAddSignature := {
-      B: Type;
-      #[canonical=no] C: Z -> B -> Type;
-    }.
-  End ZSpecificAddSignature.
-  Export ZSpecificAddSignature(ZSpecificAddSignature).
-
-  Canonical Structure Z_specific_add_signature (sig2: ZSpecificAddSignature)
-  : ZAddSignature :=
-  {|
-    ZAddSignature.B := try_first sig2.(ZSpecificAddSignature.B);
-    ZAddSignature.C := let '{| ZSpecificAddSignature.C := C; |} := sig2 in C;
-  |}.
+  Module ZAddSignature := BinaryOverload AddSignature ZWrapper.
+  Export (canonicals) ZAddSignature.
+  Canonical Structure Z_add_branch (sig2: ZAddSignature.Branch tt)
+  : AddSignature.Specific :=
+  AddSignature.make_specific Z (ZAddSignature.make_branch tt sig2).
 
   #[global]
-  Canonical Structure Z_Z_specific_add_signature: ZSpecificAddSignature :=
+  Canonical Structure Z_Z_add_signature: ZAddSignature.S tt :=
   {|
-    ZSpecificAddSignature.B := Z;
-    ZSpecificAddSignature.C _ _ := Z;
+    ZAddSignature.B := Z;
+    ZAddSignature.C _ _ := Z;
   |}.
 
   #[export]
   Instance Z_add: AddOperation _ := Z.add.
 
   #[global]
-  Canonical Structure Z_nat_specific_add_signature: ZSpecificAddSignature :=
+  Canonical Structure Z_nat_add_signature: ZAddSignature.S tt :=
   {|
-    ZSpecificAddSignature.B := nat;
-    ZSpecificAddSignature.C _ _ := Z;
+    ZAddSignature.B := nat;
+    ZAddSignature.C _ _ := Z;
   |}.
 
   #[export]
@@ -500,10 +386,10 @@ Module TypeClassesTagged.
   fun a b => (a + Z.of_nat b)%Z.
 
   #[global]
-  Canonical Structure nat_Z_add_signature: NatSpecificAddSignature :=
+  Canonical Structure nat_Z_add_signature: NatAddSignature.S tt :=
   {|
-    NatSpecificAddSignature.B := Z;
-    NatSpecificAddSignature.C _ _ := Z;
+    NatAddSignature.B := Z;
+    NatAddSignature.C _ _ := Z;
   |}.
 
   #[export]
@@ -524,19 +410,19 @@ Module TypeClassesTagged.
 
   #[universes(polymorphic)]
   Canonical Structure Type_add_signature@{U} (sig2: TypeAddSignature)
-  : SpecificAddSignature :=
+  : AddSignature.Specific :=
   {|
-    SpecificAddSignature.A := Type@{U};
-    SpecificAddSignature.B := Type_no_match (sig2.(TypeAddSignature.B));
-    SpecificAddSignature.C := let '{| TypeAddSignature.C := C; |} := sig2 in C;
+    AddSignature.Specific.A := Type@{U};
+    AddSignature.Specific.B := Type_no_match (sig2.(TypeAddSignature.B));
+    AddSignature.Specific.C := let '{| TypeAddSignature.C := C; |} := sig2 in C;
   |}.
 
   #[universes(polymorphic)]
-  Canonical Structure Type_any_add_branch@{U} (sig2: AnyAddSignature Type@{U})
+  Canonical Structure Type_any_add_branch@{U} (sig2: AddSignature.Any Type@{U})
   : TypeAddSignature :=
   {|
-    TypeAddSignature.B := try_second sig2.(AnyAddSignature.B);
-    TypeAddSignature.C := let '{| AnyAddSignature.C := C; |} := sig2 in C;
+    TypeAddSignature.B := try_second sig2.(AddSignature.Any.B);
+    TypeAddSignature.C := let '{| AddSignature.Any.C := C; |} := sig2 in C;
   |}.
 
   Module TypeSpecificAddSignature.
@@ -559,7 +445,7 @@ Module TypeClassesTagged.
   Set Warnings "-redundant-canonical-projection".
   #[global]
   Canonical Structure set_add_signature (sig2: TypeAddSignature@{Set})
-  : SpecificAddSignature := Type_add_signature@{Set} sig2.
+  : AddSignature.Specific := Type_add_signature@{Set} sig2.
   Set Warnings "".
 
   #[global]
