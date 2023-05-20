@@ -105,7 +105,6 @@ Module TypeClassesTagged.
     Parameter P: Type.
     Parameter T: P -> Type.
   End TypeModule.
-  Print Module Type TypeModule.
 
   Module BinaryOverload (Sig: BinarySignatureType) (T: TypeModule).
 
@@ -553,7 +552,7 @@ Module TypeClassesTagged.
 
   Definition list_no_match := try_second.
 
-  Canonical Structure list_cons_signature (A: Type)
+  Canonical Structure unknown_list_cons_signature (A: Type)
   : ConsSignature.S :=
   {|
     ConsSignature.A := list_no_match A;
@@ -563,56 +562,25 @@ Module TypeClassesTagged.
 
   #[export]
   Instance any_list_cons (A: Type)
-  : ConsOperation (list_cons_signature A) :=
+  : ConsOperation (unknown_list_cons_signature A) :=
   List.cons.
 
-  Module NatConsSignature.
-    Structure NatConsSignature := {
-      B: TaggedType;
-      #[canonical=no] C: nat -> untag B -> Type;
-    }.
-  End NatConsSignature.
-  Export NatConsSignature(NatConsSignature).
-
-  Canonical Structure nat_cons_signature (op2: NatConsSignature)
+  Module NatConsSignature := BinaryOverload ConsSignature NatWrapper.
+  Export (canonicals) NatConsSignature.
+  Canonical Structure nat_cons_branch (sig2: NatConsSignature.Branch tt)
   : ConsSignature.Specific :=
-  {|
-    ConsSignature.Specific.A := nat;
-    ConsSignature.Specific.C := op2.(NatConsSignature.C);
-  |}.
-
-  Canonical Structure nat_any_cons_branch (op2: ConsSignature.Any nat)
-  : NatConsSignature :=
-  {|
-    NatConsSignature.B := try_second op2.(ConsSignature.Any.B);
-    NatConsSignature.C := op2.(ConsSignature.Any.C);
-  |}.
-
-  Module NatSpecificConsSignature.
-    Structure NatSpecificConsSignature := {
-      B: Type;
-      #[canonical=no] C: nat -> B -> Type;
-    }.
-  End NatSpecificConsSignature.
-  Export NatSpecificConsSignature(NatSpecificConsSignature).
-
-  Canonical Structure nat_specific_cons_signature (op2: NatSpecificConsSignature)
-  : NatConsSignature :=
-  {|
-    NatConsSignature.B := try_first op2.(NatSpecificConsSignature.B);
-    NatConsSignature.C := op2.(NatSpecificConsSignature.C);
-  |}.
+  ConsSignature.make_specific nat (NatConsSignature.make_branch tt sig2).
 
   Canonical Structure nat_list_Z_cons_signature
-  : NatSpecificConsSignature :=
+  : NatConsSignature.S tt :=
   {|
-    NatSpecificConsSignature.B := list Z;
-    NatSpecificConsSignature.C _ _ := list Z;
+    NatConsSignature.B := list Z;
+    NatConsSignature.C _ _ := list Z;
   |}.
 
   #[export]
   Instance nat_list_Z_cons
-  : ConsOperation (ConsSignature.specific (nat_cons_signature (nat_specific_cons_signature _))) :=
+  : ConsOperation _ :=
   fun a => List.cons (Z.of_nat a).
 
   Canonical Structure any_Ensemble_cons_signature (A: Type): ConsSignature.Any A := {|
@@ -622,7 +590,7 @@ Module TypeClassesTagged.
 
   Definition Ensemble_no_match (A: Type) := A.
 
-  Canonical Structure Ensemble_cons_signature (A: Type)
+  Canonical Structure unknown_Ensemble_cons_signature (A: Type)
   : ConsSignature.Specific :=
   {|
     ConsSignature.Specific.A := Ensemble_no_match A;
@@ -632,7 +600,7 @@ Module TypeClassesTagged.
 
   #[export]
   Instance any_Ensemble_cons (A: Type)
-  : ConsOperation (ConsSignature.specific (Ensemble_cons_signature A)) :=
+  : ConsOperation (ConsSignature.specific (unknown_Ensemble_cons_signature A)) :=
   fun a e => Add _ e a.
 
   Theorem list_in_cons : forall A (a: A) (l: list A), List.In a (a [::] l).
