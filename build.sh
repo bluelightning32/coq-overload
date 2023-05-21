@@ -17,7 +17,7 @@ if [ "$1" != "install" ]; then
     echo "alt"
     cd alt
     coq_makefile -o CoqMakefile -f _CoqProject
-    make -f CoqMakefile "$filtered"
+    make -f CoqMakefile "${filtered[@]}"
   )
 fi
 

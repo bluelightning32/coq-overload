@@ -1,2 +1,11 @@
 -R ./ "Overload.Alt"
-NotationTest.v
+NativeNotations.v
+TypeClasses.v
+TypeClassesOutputParam.v
+TypeClassesFunc.v
+ResultClass.v
+CanonicalStructures.v
+CanonicalStructuresSimplNever.v
+TypeClassesCanonicalSignature.v
+TypeClassesUnfoldResult.v
+TypeClassesTagged.v
