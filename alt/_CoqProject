@@ -1,4 +1,4 @@
--R ./ "Overload.Alt"
+-Q ./ "Overload.Alt"
 NativeNotations.v
 TypeClasses.v
 TypeClassesOutputParam.v
