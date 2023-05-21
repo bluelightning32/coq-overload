@@ -4,7 +4,7 @@ Require Import Relations.
 Require Import RelationClasses.
 Require Import CRelationClasses.
 Require Import Constructive_sets.
-Require Import Binary.
+Require Import Overload.Binary.
 
 (* Passes *)
 Module TypeClassesTagged.

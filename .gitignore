@@ -8,3 +8,6 @@ CoqMakefile.conf
 .CoqMakefile.d
 .lia.cache
 .nia.cache
+.ExampleMakefile.d
+ExampleMakefile
+ExampleMakefile.conf
