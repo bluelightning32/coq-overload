@@ -4,6 +4,7 @@ Require Import Relations.
 Require Import RelationClasses.
 Require Import CRelationClasses.
 Require Import Constructive_sets.
+Require Import Binary.
 
 (* Passes *)
 Module TypeClassesTagged.
@@ -11,145 +12,9 @@ Module TypeClassesTagged.
   Delimit Scope operation_scope with operation.
   Open Scope operation_scope.
 
-  #[universes(polymorphic)]
-  Structure TaggedType@{U} := try_second {
-    untag: Type@{U};
-  }.
-
-  Canonical Structure try_first (A: Type) := try_second A.
-
-  Module Type SignatureId.
-  End SignatureId.
-
-  Module Type BinarySignatureType.
-    Structure S := {
-      A: TaggedType;
-      B: Type;
-      #[canonical=no] C: untag A -> B -> Type;
-    }.
-    Arguments C : simpl never.
-
-    Module Any.
-      Structure Any (A: Type) := {
-        B: Type;
-        #[canonical=no] C: A -> B -> Type;
-      }.
-      Arguments B {A}.
-      Arguments C {A}.
-    End Any.
-    Notation Any := Any.Any.
-
-    Module Specific.
-      Structure Specific := {
-        A: Type;
-        B: Type;
-        #[canonical=no] C: A -> B -> Type;
-      }.
-    End Specific.
-    Notation Specific := Specific.Specific.
-  End BinarySignatureType.
-
-  Module BinarySignature (Id: SignatureId) <: BinarySignatureType.
-    Structure S := {
-      A: TaggedType;
-      B: Type;
-      #[canonical=no] C: untag A -> B -> Type;
-    }.
-    Arguments C : simpl never.
-
-    Module Any.
-      Structure Any (A: Type) := {
-        B: Type;
-        #[canonical=no] C: A -> B -> Type;
-      }.
-      Arguments B {A}.
-      Arguments C {A}.
-    End Any.
-    Notation Any := Any.Any.
-
-    Module Specific.
-      Structure Specific := {
-        A: Type;
-        #[canonical=no] B: Type;
-        #[canonical=no] C: A -> B -> Type;
-      }.
-    End Specific.
-    Notation Specific := Specific.Specific.
-
-    Canonical Structure any (A: Type) (sig2: Any A)
-    : S :=
-    {|
-      A := try_second A;
-      B := sig2.(Any.B);
-      C := let '{| Any.C := C; |} := sig2 in C;
-    |}.
-
-    Canonical Structure specific (sig2: Specific)
-    : S :=
-    {|
-      A := try_first sig2.(Specific.A);
-      B := sig2.(Specific.B);
-      C := let '{| Specific.C := C; |} := sig2 in C;
-    |}.
-
-    Definition make_specific (A: Type) (packed: Any A)
-    : Specific :=
-    {|
-      Specific.A := A;
-      Specific.B := packed.(Any.B);
-      Specific.C := let '{| Any.C := C; |} := packed in C;
-    |}.
-  End BinarySignature.
-
-  Module Type TypeModule.
-    Parameter P: Type.
-    Parameter T: P -> Type.
-  End TypeModule.
-
-  Module BinaryOverload (Sig: BinarySignatureType) (T: TypeModule).
-
-    Module Branch.
-      Structure S (p: T.P) := {
-        B: TaggedType;
-        #[canonical=no] C: T.T p -> untag B -> Type;
-      }.
-      Arguments B {p}.
-    End Branch.
-    Notation Branch := Branch.S.
-
-    Definition no_match (B: TaggedType): Type := untag B.
-
-    Definition make_branch (p: T.P) (sig2: Branch p)
-    : Sig.Any (T.T p) :=
-    {|
-      Sig.Any.B := no_match (sig2.(Branch.B));
-      Sig.Any.C := let '{| Branch.C := C; |} := sig2 in C;
-    |}.
-
-    Canonical Structure fallback_branch (p: T.P) (sig2: Sig.Any (T.T p))
-    : Branch p :=
-    {|
-      Branch.B := try_second sig2.(Sig.Any.B);
-      Branch.C := let '{| Sig.Any.C := C; |} := sig2 in C;
-    |}.
-
-    Structure S (p: T.P) := {
-      B: Type;
-      #[canonical=no] C: T.T p -> B -> Type;
-    }.
-    Arguments B {p}.
-
-    Canonical Structure overload_branch (p: T.P) (sig2: S p)
-    : Branch p :=
-    {|
-      Branch.B := try_first sig2.(B);
-      Branch.C := let '{| C := C; |} := sig2 in C;
-    |}.
-  End BinaryOverload.
-
-  Module LEId: SignatureId.
+  Module LEId: Binary.Id.
   End LEId.
-  Module LESignature := BinarySignature LEId.
+  Module LESignature := Binary.Signature LEId.
   Export (canonicals) LESignature.
 
   Class LEOperation (r: LESignature.S) :=
@@ -164,7 +29,7 @@ Module TypeClassesTagged.
     Definition T (_: unit) := nat.
   End NatWrapper.
 
-  Module NatLESignature := BinaryOverload LESignature NatWrapper.
+  Module NatLESignature := Binary.Overload LESignature NatWrapper.
   Export (canonicals) NatLESignature.
 
   Canonical Structure nat_le_branch (sig2: NatLESignature.Branch tt)
@@ -186,7 +51,7 @@ Module TypeClassesTagged.
     Definition T (_: unit) := Z.
   End ZWrapper.
 
-  Module ZLESignature := BinaryOverload LESignature ZWrapper.
+  Module ZLESignature := Binary.Overload LESignature ZWrapper.
   Export (canonicals) ZLESignature.
 
   Canonical Structure Z_le_branch (sig2: ZLESignature.Branch tt)
@@ -330,9 +195,9 @@ Module TypeClassesTagged.
     reflexivity.
   Qed.
 
-  Module AddId: SignatureId.
+  Module AddId: Binary.Id.
   End AddId.
-  Module AddSignature := BinarySignature AddId.
+  Module AddSignature := Binary.Signature AddId.
   Export (canonicals) AddSignature.
 
   Class AddOperation (r: AddSignature.S) :=
@@ -341,7 +206,7 @@ Module TypeClassesTagged.
             return untag r.(AddSignature.A) -> r.(AddSignature.B) -> Type in C) a b.
   Infix "[+]" := add (at level 50, left associativity) : operation_scope.
 
-  Module NatAddSignature := BinaryOverload AddSignature NatWrapper.
+  Module NatAddSignature := Binary.Overload AddSignature NatWrapper.
   Export (canonicals) NatAddSignature.
   Canonical Structure nat_add_branch (sig2: NatAddSignature.Branch tt)
   : AddSignature.Specific :=
@@ -357,7 +222,7 @@ Module TypeClassesTagged.
   #[export]
   Instance nat_add: AddOperation _ := Nat.add.
 
-  Module ZAddSignature := BinaryOverload AddSignature ZWrapper.
+  Module ZAddSignature := Binary.Overload AddSignature ZWrapper.
   Export (canonicals) ZAddSignature.
   Canonical Structure Z_add_branch (sig2: ZAddSignature.Branch tt)
   : AddSignature.Specific :=
@@ -532,9 +397,9 @@ Module TypeClassesTagged.
     reflexivity.
   Qed.
 
-  Module ConsId : SignatureId.
+  Module ConsId : Binary.Id.
   End ConsId.
-  Module ConsSignature := BinarySignature ConsId.
+  Module ConsSignature := Binary.Signature ConsId.
   Export (canonicals) ConsSignature.
 
   Class ConsOperation (r: ConsSignature.S) :=
@@ -565,7 +430,7 @@ Module TypeClassesTagged.
   : ConsOperation (unknown_list_cons_signature A) :=
   List.cons.
 
-  Module NatConsSignature := BinaryOverload ConsSignature NatWrapper.
+  Module NatConsSignature := Binary.Overload ConsSignature NatWrapper.
   Export (canonicals) NatConsSignature.
   Canonical Structure nat_cons_branch (sig2: NatConsSignature.Branch tt)
   : ConsSignature.Specific :=
