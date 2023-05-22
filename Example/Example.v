@@ -4,15 +4,16 @@ Require Import Relations.
 Require Import RelationClasses.
 Require Import CRelationClasses.
 Require Import Constructive_sets.
+Require Import Overload.SigId.
 Require Import Overload.Binary.
 
 (* Passes *)
 Module TypeClassesTagged.
-  Declare Scope operation_scope.
-  Delimit Scope operation_scope with operation.
-  Open Scope operation_scope.
+  Declare Scope overload_scope.
+  Delimit Scope overload_scope with o.
+  Open Scope overload_scope.
 
-  Module LEId: Binary.Id.
+  Module LEId: SigId.
   End LEId.
   Module LESignature := Binary.Signature LEId.
   Export (canonicals) LESignature.
@@ -22,7 +23,7 @@ Module TypeClassesTagged.
       (let '{| LESignature.C := C; |} := r
          return (untag r.(LESignature.A) -> r.(LESignature.B) -> Type) in C) a b.
 
-  Infix "<==" := le (at level 70, no associativity) : operation_scope.
+  Infix "<==" := le (at level 70, no associativity) : overload_scope.
 
   Module NatWrapper<: TypeModule.
     Definition P := unit.
@@ -195,7 +196,7 @@ Module TypeClassesTagged.
     reflexivity.
   Qed.
 
-  Module AddId: Binary.Id.
+  Module AddId: SigId.
   End AddId.
   Module AddSignature := Binary.Signature AddId.
   Export (canonicals) AddSignature.
@@ -204,7 +205,7 @@ Module TypeClassesTagged.
   add: forall (a: untag r.(AddSignature.A)) (b: r.(AddSignature.B)),
        (let '{| AddSignature.C := C; |} := r
             return untag r.(AddSignature.A) -> r.(AddSignature.B) -> Type in C) a b.
-  Infix "[+]" := add (at level 50, left associativity) : operation_scope.
+  Infix "[+]" := add (at level 50, left associativity) : overload_scope.
 
   Module NatAddSignature := Binary.Overload AddSignature NatWrapper.
   Export (canonicals) NatAddSignature.
@@ -397,7 +398,7 @@ Module TypeClassesTagged.
     reflexivity.
   Qed.
 
-  Module ConsId : Binary.Id.
+  Module ConsId : SigId.
   End ConsId.
   Module ConsSignature := Binary.Signature ConsId.
   Export (canonicals) ConsSignature.
@@ -408,7 +409,7 @@ Module TypeClassesTagged.
              return untag r.(ConsSignature.A) -> r.(ConsSignature.B) -> Type
              in C)
           a b.
-  Infix "[::]" := cons (at level 60, right associativity) : operation_scope.
+  Infix "[::]" := cons (at level 60, right associativity) : overload_scope.
 
   Canonical Structure any_list_cons_signature (A: Type): ConsSignature.Any A := {|
     ConsSignature.Any.B := list A;

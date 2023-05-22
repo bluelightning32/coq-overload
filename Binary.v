@@ -1,3 +1,5 @@
+Require Import Overload.SigId.
+
 #[universes(polymorphic)]
 Structure TaggedType@{U} := try_second {
   untag: Type@{U};
@@ -33,10 +35,7 @@ Module Type SignatureTyp.
   Notation Specific := Specific.Specific.
 End SignatureTyp.
 
-Module Type Id.
-End Id.
-
-Module Signature (Id: Id) <: SignatureTyp.
+Module Signature (Id: SigId) <: SignatureTyp.
   Structure S := {
     A: TaggedType;
     B: Type;
