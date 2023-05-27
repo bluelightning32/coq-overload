@@ -30,10 +30,10 @@ Module TypeClassesTagged.
     Definition T (_: unit) := nat.
   End NatWrapper.
 
-  Module NatLESignature := Binary.Overload LESignature NatWrapper.
+  Module NatLESignature := Binary.Branch LESignature NatWrapper.
   Export (canonicals) NatLESignature.
 
-  Canonical Structure nat_le_branch (sig2: NatLESignature.Branch tt)
+  Canonical Structure nat_le_branch (sig2: NatLESignature.AnySpecificBranch tt)
   : LESignature.Specific :=
   LESignature.make_specific nat (NatLESignature.make_branch tt sig2).
 
@@ -52,10 +52,10 @@ Module TypeClassesTagged.
     Definition T (_: unit) := Z.
   End ZWrapper.
 
-  Module ZLESignature := Binary.Overload LESignature ZWrapper.
+  Module ZLESignature := Binary.Branch LESignature ZWrapper.
   Export (canonicals) ZLESignature.
 
-  Canonical Structure Z_le_branch (sig2: ZLESignature.Branch tt)
+  Canonical Structure Z_le_branch (sig2: ZLESignature.AnySpecificBranch tt)
   : LESignature.Specific :=
   LESignature.make_specific Z (ZLESignature.make_branch tt sig2).
 
@@ -79,6 +79,49 @@ Module TypeClassesTagged.
   #[export]
   Instance Z_nat_le: LEOperation _ :=
   fun a b => (a <= Z.of_nat b)%Z.
+
+  Module ListWrapper<: TypeModule.
+    Definition P := Type.
+    Definition T (A: P) := list A.
+  End ListWrapper.
+
+  Module ListLESignature := Binary.Branch LESignature ListWrapper.
+  Export (canonicals) ListLESignature.
+
+  Canonical Structure list_le_branch
+    (A: Type) (sig2: ListLESignature.AnySpecificBranch A)
+  : LESignature.Specific :=
+  LESignature.make_specific (list A) (ListLESignature.make_branch A sig2).
+
+  #[global]
+  Canonical Structure list_list_le_signature (A: Type) (B: Type)
+  : ListLESignature.S A :=
+  {|
+    ListLESignature.B := list B;
+    ListLESignature.C _ _ := Prop;
+  |}.
+
+  Fixpoint lexicographical_le {A: Type} (le: A -> A -> Prop) (l1 l2: list A)
+  : Prop :=
+  match l1 with
+  | nil => True
+  | h1 :: l1 =>
+    match l2 with
+    | nil => False
+    | h2 :: l2 =>
+      le h1 h2 /\ (~le h2 h1 \/ lexicographical_le le l1 l2)
+    end
+  end.
+
+  #[export]
+  Instance list_list_le (A: Type)
+                        (o: LEOperation {|
+                                          LESignature.A := {| untag:= A; |};
+                                          LESignature.B := A;
+                                          LESignature.C _ _ := Prop;
+                        |})
+  : LEOperation _ :=
+  lexicographical_le (@le _ o).
 
   (* If the first argument is a relation, the second argument must also be a
      relation. This restriction is done so that an unknown second argument is
@@ -149,6 +192,10 @@ Module TypeClassesTagged.
 
   Definition compare_Z_nat (a: Z) (b: nat) := a <== b.
 
+  Definition compare_list_nats (a b: list nat) := a <== b.
+
+  Definition compare_list_Zs (a b: list Z) := a <== b.
+
   Definition compare_relations (A: Type) (R S: relation A) :=
     R <== S.
 
@@ -207,9 +254,9 @@ Module TypeClassesTagged.
             return untag r.(AddSignature.A) -> r.(AddSignature.B) -> Type in C) a b.
   Infix "[+]" := add (at level 50, left associativity) : overload_scope.
 
-  Module NatAddSignature := Binary.Overload AddSignature NatWrapper.
+  Module NatAddSignature := Binary.Branch AddSignature NatWrapper.
   Export (canonicals) NatAddSignature.
-  Canonical Structure nat_add_branch (sig2: NatAddSignature.Branch tt)
+  Canonical Structure nat_add_branch (sig2: NatAddSignature.AnySpecificBranch tt)
   : AddSignature.Specific :=
   AddSignature.make_specific nat (NatAddSignature.make_branch tt sig2).
 
@@ -223,9 +270,9 @@ Module TypeClassesTagged.
   #[export]
   Instance nat_add: AddOperation _ := Nat.add.
 
-  Module ZAddSignature := Binary.Overload AddSignature ZWrapper.
+  Module ZAddSignature := Binary.Branch AddSignature ZWrapper.
   Export (canonicals) ZAddSignature.
-  Canonical Structure Z_add_branch (sig2: ZAddSignature.Branch tt)
+  Canonical Structure Z_add_branch (sig2: ZAddSignature.AnySpecificBranch tt)
   : AddSignature.Specific :=
   AddSignature.make_specific Z (ZAddSignature.make_branch tt sig2).
 
@@ -431,9 +478,9 @@ Module TypeClassesTagged.
   : ConsOperation (unknown_list_cons_signature A) :=
   List.cons.
 
-  Module NatConsSignature := Binary.Overload ConsSignature NatWrapper.
+  Module NatConsSignature := Binary.Branch ConsSignature NatWrapper.
   Export (canonicals) NatConsSignature.
-  Canonical Structure nat_cons_branch (sig2: NatConsSignature.Branch tt)
+  Canonical Structure nat_cons_branch (sig2: NatConsSignature.AnySpecificBranch tt)
   : ConsSignature.Specific :=
   ConsSignature.make_specific nat (NatConsSignature.make_branch tt sig2).
 

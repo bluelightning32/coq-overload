@@ -92,30 +92,30 @@ Module Type TypeModule.
   Parameter T: P -> Type.
 End TypeModule.
 
-Module Overload (Sig: SignatureTyp) (T: TypeModule).
-  Module Branch.
+Module Branch (Sig: SignatureTyp) (T: TypeModule).
+  Module AnySpecificBranch.
     Structure S (p: T.P) := {
       B: TaggedType;
       #[canonical=no] C: T.T p -> untag B -> Type;
     }.
     Arguments B {p}.
-  End Branch.
-  Notation Branch := Branch.S.
+  End AnySpecificBranch.
+  Notation AnySpecificBranch := AnySpecificBranch.S.
 
   Definition no_match (B: TaggedType): Type := untag B.
 
-  Definition make_branch (p: T.P) (sig2: Branch p)
+  Definition make_branch (p: T.P) (sig2: AnySpecificBranch p)
   : Sig.Any (T.T p) :=
   {|
-    Sig.Any.B := no_match (sig2.(Branch.B));
-    Sig.Any.C := let '{| Branch.C := C; |} := sig2 in C;
+    Sig.Any.B := no_match (sig2.(AnySpecificBranch.B));
+    Sig.Any.C := let '{| AnySpecificBranch.C := C; |} := sig2 in C;
   |}.
 
   Canonical Structure fallback_branch (p: T.P) (sig2: Sig.Any (T.T p))
-  : Branch p :=
+  : AnySpecificBranch p :=
   {|
-    Branch.B := try_second sig2.(Sig.Any.B);
-    Branch.C := let '{| Sig.Any.C := C; |} := sig2 in C;
+    AnySpecificBranch.B := try_second sig2.(Sig.Any.B);
+    AnySpecificBranch.C := let '{| Sig.Any.C := C; |} := sig2 in C;
   |}.
 
   Structure S (p: T.P) := {
@@ -125,9 +125,9 @@ Module Overload (Sig: SignatureTyp) (T: TypeModule).
   Arguments B {p}.
 
   Canonical Structure overload_branch (p: T.P) (sig2: S p)
-  : Branch p :=
+  : AnySpecificBranch p :=
   {|
-    Branch.B := try_first sig2.(B);
-    Branch.C := let '{| C := C; |} := sig2 in C;
+    AnySpecificBranch.B := try_first sig2.(B);
+    AnySpecificBranch.C := let '{| C := C; |} := sig2 in C;
   |}.
-End Overload.
+End Branch.

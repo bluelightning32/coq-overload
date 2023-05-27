@@ -76,11 +76,12 @@ project.
 
 ## Declaring an overloadable notation
 
-Import the `SigId` module and the `Binary` module that assists in declaring
-overloaded binary notations. Note that currently only binary notations
-(notations with 2 operands) are supported. It would be possible to support
-operations with different numbers of operands, I have not because I cannot
-think of good examples of how they would be used.
+Import the `SigId` module, which is needed to instantiate the other overload
+modules. Import the `Binary` module that assists in declaring overloaded binary
+notations. Note that currently only binary notations (notations with 2
+operands) are supported. It would be possible to support operations with
+different numbers of operands, I have not because I cannot think of good
+examples of how they would be used.
 ```
 Require Import Overload.SigId.
 Require Import Overload.Binary.
@@ -125,4 +126,25 @@ is to look up a similar existing notation, such as by running
 However, if the notation already exists for other scopes, then leave out the level and associativity.
 ```
   Infix "<=" := le : overload_scope.
+```
+
+## Branching on the first parameter with a known head constant
+
+Declaring a branch on the first parameter allows a full overload to later be
+defined. For instance, declaring a branch on `nat` for the first parameter of
+`<=` would allow for overloads like `(_ <= _) : nat -> Z -> Prop` to be
+defined afterwards. To declare the branch, the overload type must have a head
+constant. `nat` and `Ensemble ?A` are examples of types with a head constant.
+`forall A, list A` is an example of a type without a head constant.
+
+Either define a type module for the overload type, or reuse an existing one. In
+this case it does not hurt to have duplicate instances of the TypeModule across
+different overloaded operators. The example below is for `nat`. For a simple
+type (not type family), use this example as a template and replace `nat` and
+`Nat` with your type.
+```
+Module NatWrapper<: TypeModule.
+Definition P := unit.
+Definition T (_: unit) := nat.
+End NatWrapper.
 ```
