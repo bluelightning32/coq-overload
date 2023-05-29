@@ -27,7 +27,7 @@ Module TypeClassesTagged.
 
   Module NatWrapper<: TypeModule.
     Definition P := unit.
-    Definition T (_: unit) := nat.
+    Definition T (_: P) := nat.
   End NatWrapper.
 
   Module NatLESignature := Binary.Branch LESignature NatWrapper.
@@ -49,7 +49,7 @@ Module TypeClassesTagged.
 
   Module ZWrapper<: TypeModule.
     Definition P := unit.
-    Definition T (_: unit) := Z.
+    Definition T (_: P) := Z.
   End ZWrapper.
 
   Module ZLESignature := Binary.Branch LESignature ZWrapper.
@@ -632,7 +632,7 @@ Module TypeClassesTagged.
      into an instance of Reflexive. *)
   Succeed Definition nat_refl' := (fun r : Reflexive nat_le => r) _.
 
-  Goal forall m n, S m <== S n -> m <== n.
+  Goal forall (m n: nat), S m <== S n -> m <== n.
   Proof.
     (* This fails because the auto hints for <= don't exactly match <==. *)
     Fail progress auto with arith.
@@ -646,7 +646,7 @@ Module TypeClassesTagged.
   #[export]
   Hint Unfold nat_le le : core.
 
-  Goal forall m n, S m <== S n -> m <== n.
+  Goal forall (m n: nat), S m <== S n -> m <== n.
   Proof.
     (* Now auto works because it can see that <== is <=. *)
     auto with arith.
