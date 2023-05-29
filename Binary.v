@@ -1,6 +1,6 @@
 Require Import Overload.SigId.
 
-#[universes(polymorphic)]
+#[universes(polymorphic, cumulative)]
 Structure TaggedType@{U} := try_second {
   untag: Type@{U};
 }.
