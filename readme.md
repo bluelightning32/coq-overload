@@ -108,10 +108,14 @@ Export (canonicals) LESignature.
 In addition to the overload signature, an overload type class must be declared.
 Replace `LE` and `le` with abbreviations that match the signature name above.
 ```
-Class LEOperation (r: LESignature.S) :=
-le: forall (a: r.(LESignature.A)) (b: r.(LESignature.B)),
-    (let '{| LESignature.C := C; |} := r
-       return (r.(LESignature.A) -> r.(LESignature.B) -> Type) in C) a b.
+Class LEOperation (r: LESignature.BacktrackBranch) :=
+le: forall (a: untag r.(LESignature.BacktrackBranch.A))
+           (b: r.(LESignature.BacktrackBranch.B)),
+    (let '{| LESignature.BacktrackBranch.C := C; |} := r
+       return (untag r.(LESignature.BacktrackBranch.A) ->
+               r.(LESignature.BacktrackBranch.B) ->
+               Type)
+       in C) a b.
 ```
 
 Finally declare the notation itself, and have it call the function from the
@@ -251,7 +255,7 @@ operation.
 ```
 #[export]
 Instance any_list_cons (A: Type)
-: ConsOperation (ConsSignature.any A _) :=
+: ConsOperation (ConsSignature.fallback_branch A _) :=
 List.cons.
 ```
 
@@ -280,14 +284,14 @@ known, so that it only matches using the second argument. Replace `list` with
 the type of the first argument, second argument, or output type where
 appropriate. Replace `Cons` and `cons` with the name of your operator.
 ```
-Definition list_no_match (A: Type) := A.
+Definition list_no_match := try_second.
 
 Canonical Structure unknown_list_cons_signature (A: Type)
-: ConsSignature.S :=
+: ConsSignature.BacktrackBranch :=
 {|
-  ConsSignature.A := list_no_match A;
-  ConsSignature.B := list A;
-  ConsSignature.C _ _ := list A;
+  ConsSignature.BacktrackBranch.A := list_no_match A;
+  ConsSignature.BacktrackBranch.B := list A;
+  ConsSignature.BacktrackBranch.C _ _ := list A;
 |}.
 ```
 
@@ -460,7 +464,6 @@ Canonical Structure Type_overload_add_signature@{U} (sig2: TypeBacktrackAddBranc
 |}.
 
 Set Warnings "-redundant-canonical-projection".
-#[global]
 Canonical Structure set_add_signature (sig2: TypeAddSignature.S@{Set})
 : AddSignature.S := Type_add_signature@{Set} sig2.
 Set Warnings "".
@@ -470,7 +473,6 @@ Next, use the branch declared above (which added support for overloading the
 first argument) to declare the signature for the combination of the types in
 the first and second arguments.
 ```
-#[global]
 #[universes(polymorphic)]
 Canonical Structure Type_Type_add_signature@{U}
 : TypeBacktrackAddBranch@{U} :=

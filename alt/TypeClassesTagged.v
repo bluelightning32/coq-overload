@@ -1,5 +1,3 @@
-(* Fails compare_listZs *)
-
 Require Import ZArith.
 Require Import List.
 Require Import Relations.
@@ -21,18 +19,18 @@ Canonical Structure try_first (A: Type) := try_second A.
 
 Module LESignature.
   Structure LESignature := {
-    A: Type;
+    A: TaggedType;
     B: Type;
-    #[canonical=no] C: A -> B -> Type;
+    #[canonical=no] C: untag A -> B -> Type;
   }.
   Arguments C : simpl never.
 End LESignature.
 Export LESignature(LESignature).
 
 Class LEOperation (r: LESignature) :=
-le: forall (a: r.(LESignature.A)) (b: r.(LESignature.B)),
+le: forall (a: untag r.(LESignature.A)) (b: r.(LESignature.B)),
     (let '{| LESignature.C := C; |} := r
-       return (r.(LESignature.A) -> r.(LESignature.B) -> Type) in C) a b.
+       return (untag r.(LESignature.A) -> r.(LESignature.B) -> Type) in C) a b.
 
 Infix "<==" := le (at level 70, no associativity) : operation_scope.
 
@@ -49,9 +47,26 @@ Export AnyLESignature(AnyLESignature).
 Canonical Structure any_le_signature (A: Type) (sig2: AnyLESignature A)
 : LESignature :=
 {|
-  LESignature.A := A;
+  LESignature.A := try_second A;
   LESignature.B := sig2.(AnyLESignature.B);
   LESignature.C := let '{| AnyLESignature.C := C; |} := sig2 in C;
+|}.
+
+Module SpecificLESignature.
+  Structure SpecificLESignature := {
+    A: Type;
+    B: Type;
+    #[canonical=no] C: A -> B -> Type;
+  }.
+End SpecificLESignature.
+Export SpecificLESignature(SpecificLESignature).
+
+Canonical Structure specific_le_signature (sig2: SpecificLESignature)
+: LESignature :=
+{|
+  LESignature.A := try_first sig2.(SpecificLESignature.A);
+  LESignature.B := sig2.(SpecificLESignature.B);
+  LESignature.C := let '{| SpecificLESignature.C := C; |} := sig2 in C;
 |}.
 
 Module NatLESignature.
@@ -65,11 +80,11 @@ Export NatLESignature(NatLESignature).
 Definition nat_no_match (B: TaggedType): Type := untag B.
 
 Canonical Structure nat_le_signature (sig2: NatLESignature)
-: LESignature :=
+: SpecificLESignature :=
 {|
-  LESignature.A := nat;
-  LESignature.B := nat_no_match (sig2.(NatLESignature.B));
-  LESignature.C := let '{| NatLESignature.C := C; |} := sig2 in C;
+  SpecificLESignature.A := nat;
+  SpecificLESignature.B := nat_no_match (sig2.(NatLESignature.B));
+  SpecificLESignature.C := let '{| NatLESignature.C := C; |} := sig2 in C;
 |}.
 
 Canonical Structure nat_any_le_branch (sig2: AnyLESignature nat)
@@ -116,11 +131,11 @@ Definition Z_no_match (B: TaggedType): Type := untag B.
 
 #[global]
 Canonical Structure Z_le_signature (sig2: ZLESignature)
-: LESignature :=
+: SpecificLESignature :=
 {|
-  LESignature.A := Z;
-  LESignature.B := Z_no_match sig2.(ZLESignature.B);
-  LESignature.C := let '{| ZLESignature.C := C; |} := sig2 in C;
+  SpecificLESignature.A := Z;
+  SpecificLESignature.B := Z_no_match sig2.(ZLESignature.B);
+  SpecificLESignature.C := let '{| ZLESignature.C := C; |} := sig2 in C;
 |}.
 
 Canonical Structure Z_any_le_branch (sig2: AnyLESignature Z)
@@ -180,11 +195,11 @@ Definition list_tagged_no_match (B: TaggedType): Type := untag B.
 
 #[global]
 Canonical Structure list_le_signature (A: Type) (sig2: ListLESignature A)
-: LESignature :=
+: SpecificLESignature :=
 {|
-  LESignature.A := list A;
-  LESignature.B := list_tagged_no_match sig2.(ListLESignature.B);
-  LESignature.C := let '{| ListLESignature.C := C; |} := sig2 in C;
+  SpecificLESignature.A := list A;
+  SpecificLESignature.B := list_tagged_no_match sig2.(ListLESignature.B);
+  SpecificLESignature.C := let '{| ListLESignature.C := C; |} := sig2 in C;
 |}.
 
 Canonical Structure list_any_le_branch (A: Type)
@@ -234,7 +249,7 @@ end.
 
 #[export]
 Instance list_list_le (A: Type) (c: LEOperation {|
-                                                  LESignature.A := A;
+                                                  LESignature.A := try_first A;
                                                   LESignature.B := A;
                                                   LESignature.C _ _ := Prop;
                                                 |})
@@ -243,11 +258,21 @@ fun (l1 l2: list A) => lexicographical_le c l1 l2.
 
 #[global]
 Canonical Structure relation_relation_le_signature (A: Type)
+: SpecificLESignature :=
+{|
+  SpecificLESignature.A := relation A;
+  SpecificLESignature.B := relation A;
+  SpecificLESignature.C _ _:= Prop;
+|}.
+
+Definition relation_no_match := try_second.
+
+Canonical Structure unknown_relation_le_signature (A: Type)
 : LESignature :=
 {|
-  LESignature.A := relation A;
+  LESignature.A := relation_no_match (relation A);
   LESignature.B := relation A;
-  LESignature.C _ _:= Prop;
+  LESignature.C _ _ := Prop;
 |}.
 
 #[export]
@@ -259,9 +284,22 @@ fun (R S: relation A) => RelationClasses.subrelation R S.
 #[universes(polymorphic)]
 Canonical Structure crelation_crelation_le_signature@{A1 A2 B C}
   (A: Type@{A1})
+: SpecificLESignature :=
+{|
+  SpecificLESignature.A := crelation@{A1 A2} A;
+  SpecificLESignature.B := crelation@{A1 A2} A;
+  SpecificLESignature.C _ _ := Type@{C};
+|}.
+
+Definition crelation_no_match := try_second.
+
+#[global]
+#[universes(polymorphic)]
+Canonical Structure unknown_crelation_le_signature@{A1 A2 B C}
+  (A: Type@{A1})
 : LESignature :=
 {|
-  LESignature.A := crelation@{A1 A2} A;
+  LESignature.A := crelation_no_match (crelation@{A1 A2} A);
   LESignature.B := crelation@{A1 A2} A;
   LESignature.C _ _ := Type@{C};
 |}.
@@ -270,7 +308,10 @@ Canonical Structure crelation_crelation_le_signature@{A1 A2 B C}
 #[universes(polymorphic)]
 Instance crelation_crelation_le@{Input Output CRelation} (A: Type@{Input})
 : LEOperation
-    (crelation_crelation_le_signature@{Input Output CRelation Output} A) :=
+    (specific_le_signature (crelation_crelation_le_signature@{Input Output
+                                                              CRelation
+                                                              Output}
+                              A)) :=
 fun (R S: crelation@{Input Output} A) =>
   CRelationClasses.subrelation@{Input Output Output} R S.
 
@@ -286,7 +327,7 @@ Definition compare_list_Zs (a b: list Z) := a <== b.
 
 Definition listZ := list Z.
 
-Fail Definition compare_listZs (a b: listZ) := a <== b.
+Definition compare_listZs (a b: listZ) := a <== b.
 
 Definition compare_relations (A: Type) (R S: relation A) :=
   R <== S.
@@ -337,9 +378,9 @@ Qed.
 
 Module AddSignature.
   Structure AddSignature := {
-    A: Type;
+    A: TaggedType;
     B: Type;
-    #[canonical=no] C: A -> B -> Type;
+    #[canonical=no] C: untag A -> B -> Type;
   }.
   Arguments C : simpl never.
 End AddSignature.
@@ -358,15 +399,32 @@ Export AnyAddSignature(AnyAddSignature).
 Canonical Structure any_add_signature (A: Type) (sig2: AnyAddSignature A)
 : AddSignature :=
 {|
-  AddSignature.A := A;
+  AddSignature.A := try_second A;
   AddSignature.B := sig2.(AnyAddSignature.B);
   AddSignature.C := let '{| AnyAddSignature.C := C; |} := sig2 in C;
 |}.
 
+Module SpecificAddSignature.
+  Structure SpecificAddSignature := {
+    A: Type;
+    B: Type;
+    #[canonical=no] C: A -> B -> Type;
+  }.
+End SpecificAddSignature.
+Export SpecificAddSignature(SpecificAddSignature).
+
+Canonical Structure specific_add_signature (sig2: SpecificAddSignature)
+: AddSignature :=
+{|
+  AddSignature.A := try_first sig2.(SpecificAddSignature.A);
+  AddSignature.B := sig2.(SpecificAddSignature.B);
+  AddSignature.C := let '{| SpecificAddSignature.C := C; |} := sig2 in C;
+|}.
+
 Class AddOperation (r: AddSignature) :=
-add: forall (a: r.(AddSignature.A)) (b: r.(AddSignature.B)),
+add: forall (a: untag r.(AddSignature.A)) (b: r.(AddSignature.B)),
      (let '{| AddSignature.C := C; |} := r
-          return r.(AddSignature.A) -> r.(AddSignature.B) -> Type in C) a b.
+          return untag r.(AddSignature.A) -> r.(AddSignature.B) -> Type in C) a b.
 Infix "[+]" := add (at level 50, left associativity) : operation_scope.
 
 Module NatAddSignature.
@@ -378,11 +436,11 @@ End NatAddSignature.
 Export NatAddSignature(NatAddSignature).
 
 Canonical Structure nat_add_signature (sig2: NatAddSignature)
-: AddSignature :=
+: SpecificAddSignature :=
 {|
-  AddSignature.A := nat;
-  AddSignature.B := nat_no_match (sig2.(NatAddSignature.B));
-  AddSignature.C := let '{| NatAddSignature.C := C; |} := sig2 in C;
+  SpecificAddSignature.A := nat;
+  SpecificAddSignature.B := nat_no_match (sig2.(NatAddSignature.B));
+  SpecificAddSignature.C := let '{| NatAddSignature.C := C; |} := sig2 in C;
 |}.
 
 Canonical Structure nat_any_add_branch (sig2: AnyAddSignature nat)
@@ -426,11 +484,11 @@ End ZAddSignature.
 Export ZAddSignature(ZAddSignature).
 
 Canonical Structure Z_add_signature (sig2: ZAddSignature)
-: AddSignature :=
+: SpecificAddSignature :=
 {|
-  AddSignature.A := Z;
-  AddSignature.B := Z_no_match (sig2.(ZAddSignature.B));
-  AddSignature.C := let '{| ZAddSignature.C := C; |} := sig2 in C;
+  SpecificAddSignature.A := Z;
+  SpecificAddSignature.B := Z_no_match (sig2.(ZAddSignature.B));
+  SpecificAddSignature.C := let '{| ZAddSignature.C := C; |} := sig2 in C;
 |}.
 
 Canonical Structure Z_any_add_branch (sig2: AnyAddSignature Z)
@@ -501,11 +559,11 @@ Definition Type_no_match (B: TaggedType): Type := untag B.
 
 #[universes(polymorphic)]
 Canonical Structure Type_add_signature@{U} (sig2: TypeAddSignature)
-: AddSignature :=
+: SpecificAddSignature :=
 {|
-  AddSignature.A := Type@{U};
-  AddSignature.B := Type_no_match (sig2.(TypeAddSignature.B));
-  AddSignature.C := let '{| TypeAddSignature.C := C; |} := sig2 in C;
+  SpecificAddSignature.A := Type@{U};
+  SpecificAddSignature.B := Type_no_match (sig2.(TypeAddSignature.B));
+  SpecificAddSignature.C := let '{| TypeAddSignature.C := C; |} := sig2 in C;
 |}.
 
 #[universes(polymorphic)]
@@ -536,7 +594,7 @@ Canonical Structure Type_specific_add_signature@{U} (sig2: TypeSpecificAddSignat
 Set Warnings "-redundant-canonical-projection".
 #[global]
 Canonical Structure set_add_signature (sig2: TypeAddSignature@{Set})
-: AddSignature := Type_add_signature@{Set} sig2.
+: SpecificAddSignature := Type_add_signature@{Set} sig2.
 Set Warnings "".
 
 #[global]
@@ -626,18 +684,18 @@ Qed.
 
 Module ConsSignature.
   Structure ConsSignature := {
-    A: Type;
+    A: TaggedType;
     B: Type;
-    #[canonical=no] C: A -> B -> Type;
+    #[canonical=no] C: untag A -> B -> Type;
   }.
   Arguments C : simpl never.
 End ConsSignature.
 Export ConsSignature(ConsSignature).
 
 Class ConsOperation (r: ConsSignature) :=
-cons: forall (a: r.(ConsSignature.A)) (b: r.(ConsSignature.B)),
+cons: forall (a: untag r.(ConsSignature.A)) (b: r.(ConsSignature.B)),
       (let '{| ConsSignature.C := C; |} := r
-           return r.(ConsSignature.A) -> r.(ConsSignature.B) -> Type
+           return untag r.(ConsSignature.A) -> r.(ConsSignature.B) -> Type
            in C)
         a b.
 Infix "[::]" := cons (at level 60, right associativity) : operation_scope.
@@ -655,7 +713,7 @@ Export AnyConsSignature(AnyConsSignature).
 Canonical Structure any_cons_signature (A: Type) (op2: AnyConsSignature A)
 : ConsSignature :=
 {|
-  ConsSignature.A := A;
+  ConsSignature.A := try_second A;
   ConsSignature.C := op2.(AnyConsSignature.C);
 |}.
 
@@ -664,9 +722,9 @@ Canonical Structure any_list_cons_signature (A: Type): AnyConsSignature A := {|
   AnyConsSignature.C _ _ := list A;
 |}.
 
-Definition list_no_match (A: Type) := A.
+Definition list_no_match := try_second.
 
-Canonical Structure unknown_list_cons_signature (A: Type)
+Canonical Structure list_cons_signature (A: Type)
 : ConsSignature :=
 {|
   ConsSignature.A := list_no_match A;
@@ -676,8 +734,24 @@ Canonical Structure unknown_list_cons_signature (A: Type)
 
 #[export]
 Instance any_list_cons (A: Type)
-: ConsOperation (unknown_list_cons_signature A) :=
+: ConsOperation (list_cons_signature A) :=
 List.cons.
+
+Module SpecificConsSignature.
+  Structure SpecificConsSignature := {
+    A: Type;
+    B: Type;
+    #[canonical=no] C: A -> B -> Type;
+  }.
+End SpecificConsSignature.
+Export SpecificConsSignature(SpecificConsSignature).
+
+Canonical Structure specific_cons_signature (op2: SpecificConsSignature)
+: ConsSignature :=
+{|
+  ConsSignature.A := try_first op2.(SpecificConsSignature.A);
+  ConsSignature.C := op2.(SpecificConsSignature.C);
+|}.
 
 Module NatConsSignature.
   Structure NatConsSignature := {
@@ -688,10 +762,10 @@ End NatConsSignature.
 Export NatConsSignature(NatConsSignature).
 
 Canonical Structure nat_cons_signature (op2: NatConsSignature)
-: ConsSignature :=
+: SpecificConsSignature :=
 {|
-  ConsSignature.A := nat;
-  ConsSignature.C := op2.(NatConsSignature.C);
+  SpecificConsSignature.A := nat;
+  SpecificConsSignature.C := op2.(NatConsSignature.C);
 |}.
 
 Canonical Structure nat_any_cons_branch (op2: AnyConsSignature nat)
@@ -725,7 +799,7 @@ Canonical Structure nat_list_Z_cons_signature
 
 #[export]
 Instance nat_list_Z_cons
-: ConsOperation (nat_cons_signature (nat_specific_cons_signature _)) :=
+: ConsOperation (specific_cons_signature (nat_cons_signature (nat_specific_cons_signature _))) :=
 fun a => List.cons (Z.of_nat a).
 
 Canonical Structure any_Ensemble_cons_signature (A: Type): AnyConsSignature A := {|
@@ -736,16 +810,16 @@ Canonical Structure any_Ensemble_cons_signature (A: Type): AnyConsSignature A :=
 Definition Ensemble_no_match (A: Type) := A.
 
 Canonical Structure Ensemble_cons_signature (A: Type)
-: ConsSignature :=
+: SpecificConsSignature :=
 {|
-  ConsSignature.A := Ensemble_no_match A;
-  ConsSignature.B := Ensemble A;
-  ConsSignature.C _ _ := Ensemble A;
+  SpecificConsSignature.A := Ensemble_no_match A;
+  SpecificConsSignature.B := Ensemble A;
+  SpecificConsSignature.C _ _ := Ensemble A;
 |}.
 
 #[export]
 Instance any_Ensemble_cons (A: Type)
-: ConsOperation (Ensemble_cons_signature A) :=
+: ConsOperation (specific_cons_signature (Ensemble_cons_signature A)) :=
 fun a e => Add _ e a.
 
 Theorem list_in_cons : forall A (a: A) (l: list A), List.In a (a [::] l).

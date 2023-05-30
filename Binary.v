@@ -8,12 +8,15 @@ Structure TaggedType@{U} := try_second {
 Canonical Structure try_first (A: Type) := try_second A.
 
 Module Type SignatureTyp.
-  Structure S := {
-    A: Type;
-    B: Type;
-    #[canonical=no] C: A -> B -> Type;
-  }.
-  Arguments C : simpl never.
+  Module BacktrackBranch.
+    Structure S := {
+      A: TaggedType;
+      B: Type;
+      #[canonical=no] C: untag A -> B -> Type;
+    }.
+    Arguments C : simpl never.
+  End BacktrackBranch.
+  Notation BacktrackBranch := BacktrackBranch.S.
 
   Module Any.
     Structure Any (A: Type) := {
@@ -25,15 +28,23 @@ Module Type SignatureTyp.
   End Any.
   Notation Any := Any.Any.
 
+  Structure S := {
+    A: Type;
+    B: Type;
+    #[canonical=no] C: A -> B -> Type;
+  }.
 End SignatureTyp.
 
 Module Signature (Id: SigId) <: SignatureTyp.
-  Structure S := {
-    A: Type;
-    B: Type;
-    #[canonical=no] C: A -> B -> Type;
-  }.
-  Arguments C : simpl never.
+  Module BacktrackBranch.
+    Structure S := {
+      A: TaggedType;
+      B: Type;
+      #[canonical=no] C: untag A -> B -> Type;
+    }.
+    Arguments C : simpl never.
+  End BacktrackBranch.
+  Notation BacktrackBranch := BacktrackBranch.S.
 
   Module Any.
     Structure Any (A: Type) := {
@@ -45,12 +56,26 @@ Module Signature (Id: SigId) <: SignatureTyp.
   End Any.
   Notation Any := Any.Any.
 
-  Canonical Structure any (A: Type) (sig2: Any A)
-  : S :=
+  Structure S := {
+    A: Type;
+    B: Type;
+    #[canonical=no] C: A -> B -> Type;
+  }.
+
+  Canonical Structure fallback_branch (A: Type) (sig2: Any A)
+  : BacktrackBranch :=
   {|
-    A := A;
-    B := sig2.(Any.B);
-    C := let '{| Any.C := C; |} := sig2 in C;
+    BacktrackBranch.A := try_second A;
+    BacktrackBranch.B := sig2.(Any.B);
+    BacktrackBranch.C := let '{| Any.C := C; |} := sig2 in C;
+  |}.
+
+  Canonical Structure overload_branch (sig2: S)
+  : BacktrackBranch :=
+  {|
+    BacktrackBranch.A := try_first sig2.(A);
+    BacktrackBranch.B := sig2.(B);
+    BacktrackBranch.C := let '{| C := C; |} := sig2 in C;
   |}.
 
   Definition make_A_branch (A: Type) (packed: Any A)
