@@ -61,6 +61,7 @@ Module Signature (Id: SigId) <: SignatureTyp.
     B := B;
     C := C;
   |}.
+  Arguments make_A_branch : simpl never.
 End Signature.
 
 Module Type TypeModule.
