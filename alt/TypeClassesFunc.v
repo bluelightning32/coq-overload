@@ -1,5 +1,5 @@
-(* Fails relations_reflexive, crelations_relfexive, cbn_keeps_le_notation,
-   nat_le_reflexive, and nat_plus_0_r_le.
+(* Fails relations_reflexive, crelations_reflexive, nat_le_reflexive,
+   nat_plus_0_r_le, list_cons_le, and ensemble_cons_le.
    list_of_n_sum_types half fails.
  *)
 
@@ -40,11 +40,23 @@ Instance crelation_crelation_le@{Input Output} (A: Type@{Input})
 fun (R S: crelation@{Input Output} A) =>
   CRelationClasses.subrelation@{Input Output Output} R S.
 
+Fixpoint lexicographical_le {A: Type} (le: A -> A -> Prop) (l1 l2: list A)
+: Prop :=
+match l1 with
+| nil => True
+| h1 :: l1 =>
+  match l2 with
+  | nil => False
+  | h2 :: l2 =>
+    le h1 h2 /\ (~le h2 h1 \/ lexicographical_le le l1 l2)
+  end
+end.
+
 (* l1 <= l2, if l1 is a suffix of l2. *)
 #[export]
-Instance list_le (A: Type)
+Instance list_le (A: Type) (c: LEOperation A A (fun _ _ => Prop))
 : LEOperation (list A) (list A) (fun _ _ => Prop) :=
-fun l1 l2 => l1 = skipn (length l2 - length l1) l2.
+fun l1 l2 => lexicographical_le c l1 l2.
 
 (* B <= C, if B is a subset of C. *)
 #[export]
@@ -57,6 +69,12 @@ Definition compare_nats (a b: nat) := a <== b.
 Definition compare_ints (a b: Z) := a <== b.
 
 Definition compare_Z_nat (a: Z) (b: nat) := a <== b.
+
+Definition compare_list_nats (a b: list nat) := a <== b.
+
+Definition compare_list_Zs (a b: list Z) := a <== b.
+
+Definition listZ := list Z.
 
 Definition compare_relations (A: Type) (R S: relation A) :=
   R <== S.

@@ -1,3 +1,5 @@
+(* Fails compare_listZs *)
+
 Require Import ZArith.
 Require Import List.
 Require Import Relations.
@@ -164,6 +166,81 @@ Canonical Structure Z_nat_le_signature: ZSpecificLESignature :=
 Instance Z_nat_le: LEOperation _ :=
 fun a b => (a <= Z.of_nat b)%Z.
 
+Module ListLESignature.
+  Structure ListLESignature (A: Type) := {
+    B: TaggedType;
+    #[canonical=no] C: list A -> untag B -> Type;
+  }.
+  Arguments B {A}.
+  Arguments C {A}.
+End ListLESignature.
+Export ListLESignature(ListLESignature).
+
+Definition list_tagged_no_match (B: TaggedType): Type := untag B.
+
+#[global]
+Canonical Structure list_le_signature (A: Type) (sig2: ListLESignature A)
+: LESignature :=
+{|
+  LESignature.A := list A;
+  LESignature.B := list_tagged_no_match sig2.(ListLESignature.B);
+  LESignature.C := let '{| ListLESignature.C := C; |} := sig2 in C;
+|}.
+
+Canonical Structure list_any_le_branch (A: Type)
+                                       (sig2: AnyLESignature (list A))
+: ListLESignature A :=
+{|
+  ListLESignature.B := try_second sig2.(AnyLESignature.B);
+  ListLESignature.C := let '{| AnyLESignature.C := C; |} := sig2 in C;
+|}.
+
+Module ListSpecificLESignature.
+  Structure ListSpecificLESignature (A: Type) := {
+    B: Type;
+    #[canonical=no] C: list A -> B -> Type;
+  }.
+  Arguments B {A}.
+  Arguments C {A}.
+End ListSpecificLESignature.
+Export ListSpecificLESignature(ListSpecificLESignature).
+
+Canonical Structure list_specific_le_signature
+  (A: Type) (sig2: ListSpecificLESignature A)
+: ListLESignature A :=
+{|
+  ListLESignature.B := try_first sig2.(ListSpecificLESignature.B);
+  ListLESignature.C := let '{| ListSpecificLESignature.C := C; |} := sig2 in C;
+|}.
+
+#[global]
+Canonical Structure list_list_le_signature (A: Type): ListSpecificLESignature A :=
+{|
+  ListSpecificLESignature.B := list A;
+  ListSpecificLESignature.C _ _ := Prop;
+|}.
+
+Fixpoint lexicographical_le {A: Type} (le: A -> A -> Prop) (l1 l2: list A)
+: Prop :=
+match l1 with
+| nil => True
+| h1 :: l1 =>
+  match l2 with
+  | nil => False
+  | h2 :: l2 =>
+    le h1 h2 /\ (~le h2 h1 \/ lexicographical_le le l1 l2)
+  end
+end.
+
+#[export]
+Instance list_list_le (A: Type) (c: LEOperation {|
+                                                  LESignature.A := A;
+                                                  LESignature.B := A;
+                                                  LESignature.C _ _ := Prop;
+                                                |})
+: LEOperation _ :=
+fun (l1 l2: list A) => lexicographical_le c l1 l2.
+
 #[global]
 Canonical Structure relation_relation_le_signature (A: Type)
 : LESignature :=
@@ -202,6 +279,14 @@ Definition compare_nats (a b: nat) := a <== b.
 Definition compare_ints (a b: Z) := a <== b.
 
 Definition compare_Z_nat (a: Z) (b: nat) := a <== b.
+
+Definition compare_list_nats (a b: list nat) := a <== b.
+
+Definition compare_list_Zs (a b: list Z) := a <== b.
+
+Definition listZ := list Z.
+
+Fail Definition compare_listZs (a b: listZ) := a <== b.
 
 Definition compare_relations (A: Type) (R S: relation A) :=
   R <== S.

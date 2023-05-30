@@ -93,6 +93,53 @@ Canonical Structure Z_nat_le_signature: ZLESignature :=
 Instance Z_nat_le: LEOperation _ :=
 fun a b => (a <= Z.of_nat b)%Z.
 
+Module ListLESignature.
+  Structure ListLESignature (A: Type) := {
+    B: Type;
+    #[canonical=no] C: list A -> B -> Type;
+  }.
+  Arguments B {A}.
+  Arguments C {A}.
+End ListLESignature.
+Export ListLESignature(ListLESignature).
+
+#[global]
+Canonical Structure list_le_signature (A: Type) (sig2: ListLESignature A)
+: LESignature :=
+{|
+  LESignature.A := list A;
+  LESignature.B := sig2.(ListLESignature.B);
+  LESignature.C := sig2.(ListLESignature.C);
+|}.
+
+#[global]
+Canonical Structure list_list_le_signature (A: Type): ListLESignature A :=
+{|
+  ListLESignature.B := list A;
+  ListLESignature.C _ _ := Prop;
+|}.
+
+Fixpoint lexicographical_le {A: Type} (le: A -> A -> Prop) (l1 l2: list A)
+: Prop :=
+match l1 with
+| nil => True
+| h1 :: l1 =>
+  match l2 with
+  | nil => False
+  | h2 :: l2 =>
+    le h1 h2 /\ (~le h2 h1 \/ lexicographical_le le l1 l2)
+  end
+end.
+
+#[export]
+Instance list_list_le (A: Type) (c: LEOperation {|
+                                                  LESignature.A := A;
+                                                  LESignature.B := A;
+                                                  LESignature.C _ _ := Prop;
+                                                |})
+: LEOperation (list_le_signature A (list_list_le_signature A)) :=
+fun l1 l2 => lexicographical_le c l1 l2.
+
 #[global]
 Canonical Structure relation_le_signature (A: Type)
 : LESignature :=
@@ -130,6 +177,14 @@ Definition compare_nats (a b: nat) := a <== b.
 Definition compare_ints (a b: Z) := a <== b.
 
 Definition compare_Z_nat (a: Z) (b: nat) := a <== b.
+
+Definition compare_list_nats (a b: list nat) := a <== b.
+
+Definition compare_list_Zs (a b: list Z) := a <== b.
+
+Definition listZ := list Z.
+
+Definition compare_listZs (a b: listZ) := a <== b.
 
 Definition compare_relations (A: Type) (R S: relation A) :=
   R <== S.

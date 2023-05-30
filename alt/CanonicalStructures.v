@@ -68,6 +68,62 @@ Canonical Structure Z_nat_le: ZLEOperation := {|
   ZLEOperation.op a b := (a <= Z.of_nat b)%Z;
 |}.
 
+Module ListLEOperation.
+  Structure ListLEOperation (A: Type) := {
+    B: Type;
+    #[canonical=no] C: list A -> B -> Type;
+    #[canonical=no] op: forall a b, C a b;
+  }.
+  Arguments B {A}.
+  Arguments C {A}.
+  Arguments op {A}.
+End ListLEOperation.
+Export ListLEOperation(ListLEOperation).
+
+Canonical Structure list_le (A: Type) (op2: ListLEOperation A)
+: LEOperation :=
+{|
+  LEOperation.op:= op2.(ListLEOperation.op);
+|}.
+
+Fixpoint lexicographical_le {A: Type} (le: A -> A -> Prop) (l1 l2: list A)
+: Prop :=
+match l1 with
+| nil => True
+| h1 :: l1 =>
+  match l2 with
+  | nil => False
+  | h2 :: l2 =>
+    le h1 h2 /\ (~le h2 h1 \/ lexicographical_le le l1 l2)
+  end
+end.
+
+Module Comparison.
+  Structure Comparison := {
+    A: Type;
+    #[canonical=no] op: A -> A -> Prop;
+  }.
+End Comparison.
+Export Comparison(Comparison).
+
+Canonical Structure nat_comparison
+: Comparison :=
+{|
+  Comparison.A:= nat;
+  Comparison.op := Nat.le;
+|}.
+
+Canonical Structure Z_comparison
+: Comparison :=
+{|
+  Comparison.A:= Z;
+  Comparison.op := Z.le;
+|}.
+
+Canonical Structure list_list_le (le: Comparison): ListLEOperation le.(Comparison.A) := {|
+  ListLEOperation.op l1 l2 := lexicographical_le le.(Comparison.op) l1 l2;
+|}.
+
 Canonical Structure relation_relation_le (A: Type)
 : LEOperation :=
 {|
@@ -94,6 +150,14 @@ Definition compare_nats (a b: nat) := a <== b.
 Definition compare_ints (a b: Z) := a <== b.
 
 Definition compare_Z_nat (a: Z) (b: nat) := a <== b.
+
+Definition compare_list_nats (a b: list nat) := a <== b.
+
+Definition compare_list_Zs (a b: list Z) := a <== b.
+
+Definition listZ := list Z.
+
+Definition compare_listZs (a b: listZ) := a <== b.
 
 Definition compare_relations (A: Type) (R S: relation A) :=
   R <== S.

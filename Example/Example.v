@@ -171,6 +171,11 @@ Definition compare_list_nats (a b: list nat) := a <== b.
 
 Definition compare_list_Zs (a b: list Z) := a <== b.
 
+Definition listZ := list Z.
+
+(* The overload on listZ fails because it was not specifically defined. *)
+Fail Definition compare_listZs (a b: listZ) := a <== b.
+
 Definition compare_relations (A: Type) (R S: relation A) :=
   R <== S.
 
