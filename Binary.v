@@ -9,9 +9,9 @@ Canonical Structure try_first (A: Type) := try_second A.
 
 Module Type SignatureTyp.
   Structure S := {
-    A: TaggedType;
+    A: Type;
     B: Type;
-    #[canonical=no] C: untag A -> B -> Type;
+    #[canonical=no] C: A -> B -> Type;
   }.
   Arguments C : simpl never.
 
@@ -25,21 +25,13 @@ Module Type SignatureTyp.
   End Any.
   Notation Any := Any.Any.
 
-  Module Specific.
-    Structure Specific := {
-      A: Type;
-      B: Type;
-      #[canonical=no] C: A -> B -> Type;
-    }.
-  End Specific.
-  Notation Specific := Specific.Specific.
 End SignatureTyp.
 
 Module Signature (Id: SigId) <: SignatureTyp.
   Structure S := {
-    A: TaggedType;
+    A: Type;
     B: Type;
-    #[canonical=no] C: untag A -> B -> Type;
+    #[canonical=no] C: A -> B -> Type;
   }.
   Arguments C : simpl never.
 
@@ -53,37 +45,21 @@ Module Signature (Id: SigId) <: SignatureTyp.
   End Any.
   Notation Any := Any.Any.
 
-  Module Specific.
-    Structure Specific := {
-      A: Type;
-      #[canonical=no] B: Type;
-      #[canonical=no] C: A -> B -> Type;
-    }.
-  End Specific.
-  Notation Specific := Specific.Specific.
-
   Canonical Structure any (A: Type) (sig2: Any A)
   : S :=
   {|
-    A := try_second A;
+    A := A;
     B := sig2.(Any.B);
     C := let '{| Any.C := C; |} := sig2 in C;
   |}.
 
-  Canonical Structure specific (sig2: Specific)
+  Definition make_A_branch (A: Type) (packed: Any A)
   : S :=
+  let '{| Any.B := B; Any.C := C; |} := packed in
   {|
-    A := try_first sig2.(Specific.A);
-    B := sig2.(Specific.B);
-    C := let '{| Specific.C := C; |} := sig2 in C;
-  |}.
-
-  Definition make_specific (A: Type) (packed: Any A)
-  : Specific :=
-  {|
-    Specific.A := A;
-    Specific.B := packed.(Any.B);
-    Specific.C := let '{| Any.C := C; |} := packed in C;
+    A := A;
+    B := B;
+    C := C;
   |}.
 End Signature.
 
@@ -93,29 +69,29 @@ Module Type TypeModule.
 End TypeModule.
 
 Module Branch (Sig: SignatureTyp) (T: TypeModule).
-  Module AnySpecificBranch.
+  Module BacktrackBranch.
     Structure S (p: T.P) := {
       B: TaggedType;
       #[canonical=no] C: T.T p -> untag B -> Type;
     }.
     Arguments B {p}.
-  End AnySpecificBranch.
-  Notation AnySpecificBranch := AnySpecificBranch.S.
+  End BacktrackBranch.
+  Notation BacktrackBranch := BacktrackBranch.S.
 
   Definition no_match (B: TaggedType): Type := untag B.
 
-  Definition make_branch (p: T.P) (sig2: AnySpecificBranch p)
+  Definition A_branch (p: T.P) (sig2: BacktrackBranch p)
   : Sig.Any (T.T p) :=
   {|
-    Sig.Any.B := no_match (sig2.(AnySpecificBranch.B));
-    Sig.Any.C := let '{| AnySpecificBranch.C := C; |} := sig2 in C;
+    Sig.Any.B := no_match (sig2.(BacktrackBranch.B));
+    Sig.Any.C := let '{| BacktrackBranch.C := C; |} := sig2 in C;
   |}.
 
   Canonical Structure fallback_branch (p: T.P) (sig2: Sig.Any (T.T p))
-  : AnySpecificBranch p :=
+  : BacktrackBranch p :=
   {|
-    AnySpecificBranch.B := try_second sig2.(Sig.Any.B);
-    AnySpecificBranch.C := let '{| Sig.Any.C := C; |} := sig2 in C;
+    BacktrackBranch.B := try_second sig2.(Sig.Any.B);
+    BacktrackBranch.C := let '{| Sig.Any.C := C; |} := sig2 in C;
   |}.
 
   Structure S (p: T.P) := {
@@ -125,9 +101,9 @@ Module Branch (Sig: SignatureTyp) (T: TypeModule).
   Arguments B {p}.
 
   Canonical Structure overload_branch (p: T.P) (sig2: S p)
-  : AnySpecificBranch p :=
+  : BacktrackBranch p :=
   {|
-    AnySpecificBranch.B := try_first sig2.(B);
-    AnySpecificBranch.C := let '{| C := C; |} := sig2 in C;
+    BacktrackBranch.B := try_first sig2.(B);
+    BacktrackBranch.C := let '{| C := C; |} := sig2 in C;
   |}.
 End Branch.

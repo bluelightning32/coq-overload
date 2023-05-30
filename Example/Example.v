@@ -19,9 +19,9 @@ Module LESignature := Binary.Signature LEId.
 Export (canonicals) LESignature.
 
 Class LEOperation (r: LESignature.S) :=
-le: forall (a: untag r.(LESignature.A)) (b: r.(LESignature.B)),
+le: forall (a: r.(LESignature.A)) (b: r.(LESignature.B)),
     (let '{| LESignature.C := C; |} := r
-       return (untag r.(LESignature.A) -> r.(LESignature.B) -> Type) in C) a b.
+       return (r.(LESignature.A) -> r.(LESignature.B) -> Type) in C) a b.
 
 Infix "<==" := le (at level 70, no associativity) : overload_scope.
 
@@ -33,9 +33,9 @@ End NatWrapper.
 Module NatLESignature := Binary.Branch LESignature NatWrapper.
 Export (canonicals) NatLESignature.
 
-Canonical Structure nat_le_branch (sig2: NatLESignature.AnySpecificBranch tt)
-: LESignature.Specific :=
-LESignature.make_specific nat (NatLESignature.make_branch tt sig2).
+Canonical Structure nat_le_branch (sig2: NatLESignature.BacktrackBranch tt)
+: LESignature.S :=
+LESignature.make_A_branch nat (NatLESignature.A_branch tt sig2).
 
 #[global]
 Canonical Structure nat_nat_le_signature: NatLESignature.S tt :=
@@ -55,9 +55,9 @@ End ZWrapper.
 Module ZLESignature := Binary.Branch LESignature ZWrapper.
 Export (canonicals) ZLESignature.
 
-Canonical Structure Z_le_branch (sig2: ZLESignature.AnySpecificBranch tt)
-: LESignature.Specific :=
-LESignature.make_specific Z (ZLESignature.make_branch tt sig2).
+Canonical Structure Z_le_branch (sig2: ZLESignature.BacktrackBranch tt)
+: LESignature.S :=
+LESignature.make_A_branch Z (ZLESignature.A_branch tt sig2).
 
 #[global]
 Canonical Structure Z_Z_le_signature: ZLESignature.S tt :=
@@ -89,9 +89,9 @@ Module ListLESignature := Binary.Branch LESignature ListWrapper.
 Export (canonicals) ListLESignature.
 
 Canonical Structure list_le_branch
-  (A: Type) (sig2: ListLESignature.AnySpecificBranch A)
-: LESignature.Specific :=
-LESignature.make_specific (list A) (ListLESignature.make_branch A sig2).
+  (A: Type) (sig2: ListLESignature.BacktrackBranch A)
+: LESignature.S :=
+LESignature.make_A_branch (list A) (ListLESignature.A_branch A sig2).
 
 #[global]
 Canonical Structure list_list_le_signature (A: Type) (B: Type)
@@ -116,7 +116,7 @@ end.
 #[export]
 Instance list_list_le (A: Type)
                       (o: LEOperation {|
-                                        LESignature.A := {| untag:= A; |};
+                                        LESignature.A := A;
                                         LESignature.B := A;
                                         LESignature.C _ _ := Prop;
                       |})
@@ -128,23 +128,11 @@ lexicographical_le (@le _ o).
    unified to a relation. *)
 #[global]
 Canonical Structure relation_relation_le_signature (A: Type)
-: LESignature.Specific :=
-{|
-  LESignature.Specific.A := relation A;
-  LESignature.Specific.B := relation A;
-  LESignature.Specific.C _ _:= Prop;
-|}.
-
-Definition relation_no_match := try_second.
-
-(* If the first argument is unknown and the second is a relation, then the
-   first is unified to be a relation. *)
-Canonical Structure unknown_relation_le_signature (A: Type)
 : LESignature.S :=
 {|
-  LESignature.A := relation_no_match (relation A);
+  LESignature.A := relation A;
   LESignature.B := relation A;
-  LESignature.C _ _ := Prop;
+  LESignature.C _ _:= Prop;
 |}.
 
 #[export]
@@ -156,22 +144,9 @@ fun (R S: relation A) => RelationClasses.subrelation R S.
 #[universes(polymorphic)]
 Canonical Structure crelation_crelation_le_signature@{A1 A2 CRelation}
   (A: Type@{A1})
-: LESignature.Specific :=
-{|
-  LESignature.Specific.A := crelation@{A1 A2} A;
-  LESignature.Specific.B := crelation@{A1 A2} A;
-  LESignature.Specific.C _ _ := Type@{CRelation};
-|}.
-
-Definition crelation_no_match := try_second.
-
-#[global]
-#[universes(polymorphic)]
-Canonical Structure unknown_crelation_le_signature@{A1 A2 CRelation C}
-  (A: Type@{A1})
 : LESignature.S :=
 {|
-  LESignature.A := crelation_no_match (crelation@{A1 A2} A);
+  LESignature.A := crelation@{A1 A2} A;
   LESignature.B := crelation@{A1 A2} A;
   LESignature.C _ _ := Type@{CRelation};
 |}.
@@ -180,9 +155,9 @@ Canonical Structure unknown_crelation_le_signature@{A1 A2 CRelation C}
 #[universes(polymorphic)]
 Instance crelation_crelation_le@{Input Output CRelation Result} (A: Type@{Input})
 : LEOperation
-    (LESignature.specific (crelation_crelation_le_signature@{Input Output
+    (crelation_crelation_le_signature@{Input Output
                                                              CRelation}
-                             A)) :=
+                             A) :=
 fun (R S: crelation@{Input Output} A) =>
   CRelationClasses.subrelation@{Input Output Output} R S.
 
@@ -249,16 +224,16 @@ Module AddSignature := Binary.Signature AddId.
 Export (canonicals) AddSignature.
 
 Class AddOperation (r: AddSignature.S) :=
-add: forall (a: untag r.(AddSignature.A)) (b: r.(AddSignature.B)),
+add: forall (a: r.(AddSignature.A)) (b: r.(AddSignature.B)),
      (let '{| AddSignature.C := C; |} := r
-          return untag r.(AddSignature.A) -> r.(AddSignature.B) -> Type in C) a b.
+          return r.(AddSignature.A) -> r.(AddSignature.B) -> Type in C) a b.
 Infix "[+]" := add (at level 50, left associativity) : overload_scope.
 
 Module NatAddSignature := Binary.Branch AddSignature NatWrapper.
 Export (canonicals) NatAddSignature.
-Canonical Structure nat_add_branch (sig2: NatAddSignature.AnySpecificBranch tt)
-: AddSignature.Specific :=
-AddSignature.make_specific nat (NatAddSignature.make_branch tt sig2).
+Canonical Structure nat_add_branch (sig2: NatAddSignature.BacktrackBranch tt)
+: AddSignature.S :=
+AddSignature.make_A_branch nat (NatAddSignature.A_branch tt sig2).
 
 #[global]
 Canonical Structure nat_nat_add_signature: NatAddSignature.S tt :=
@@ -272,9 +247,9 @@ Instance nat_add: AddOperation _ := Nat.add.
 
 Module ZAddSignature := Binary.Branch AddSignature ZWrapper.
 Export (canonicals) ZAddSignature.
-Canonical Structure Z_add_branch (sig2: ZAddSignature.AnySpecificBranch tt)
-: AddSignature.Specific :=
-AddSignature.make_specific Z (ZAddSignature.make_branch tt sig2).
+Canonical Structure Z_add_branch (sig2: ZAddSignature.BacktrackBranch tt)
+: AddSignature.S :=
+AddSignature.make_A_branch Z (ZAddSignature.A_branch tt sig2).
 
 #[global]
 Canonical Structure Z_Z_add_signature: ZAddSignature.S tt :=
@@ -311,62 +286,61 @@ fun a b => (Z.of_nat a + b)%Z.
 Module TypeAddSignature.
   Universe B C.
   #[universes(polymorphic)]
-  Structure TypeAddSignature@{U} := {
+  Structure S@{U} := {
     B: TaggedType@{B};
     #[canonical=no] C: Type@{U} -> untag B -> Type@{C};
   }.
 End TypeAddSignature.
-Export TypeAddSignature(TypeAddSignature).
 
 Definition Type_no_match (B: TaggedType): Type := untag B.
 
 #[universes(polymorphic)]
-Canonical Structure Type_add_signature@{U} (sig2: TypeAddSignature)
-: AddSignature.Specific :=
+Canonical Structure Type_add_signature@{U} (sig2: TypeAddSignature.S)
+: AddSignature.S :=
 {|
-  AddSignature.Specific.A := Type@{U};
-  AddSignature.Specific.B := Type_no_match (sig2.(TypeAddSignature.B));
-  AddSignature.Specific.C := let '{| TypeAddSignature.C := C; |} := sig2 in C;
+  AddSignature.A := Type@{U};
+  AddSignature.B := Type_no_match (sig2.(TypeAddSignature.B));
+  AddSignature.C := let '{| TypeAddSignature.C := C; |} := sig2 in C;
 |}.
 
 #[universes(polymorphic)]
 Canonical Structure Type_any_add_branch@{U} (sig2: AddSignature.Any Type@{U})
-: TypeAddSignature :=
+: TypeAddSignature.S :=
 {|
   TypeAddSignature.B := try_second sig2.(AddSignature.Any.B);
   TypeAddSignature.C := let '{| AddSignature.Any.C := C; |} := sig2 in C;
 |}.
 
-Module TypeSpecificAddSignature.
+Module TypeBacktrackAddBranch.
   #[universes(polymorphic)]
-  Structure TypeSpecificAddSignature@{U} := {
+  Structure TypeBacktrackAddBranch@{U} := {
     B: Type@{TypeAddSignature.B};
     #[canonical=no] C: Type@{U} -> B -> Type@{TypeAddSignature.C};
   }.
-End TypeSpecificAddSignature.
-Export TypeSpecificAddSignature(TypeSpecificAddSignature).
+End TypeBacktrackAddBranch.
+Export TypeBacktrackAddBranch(TypeBacktrackAddBranch).
 
 #[universes(polymorphic)]
-Canonical Structure Type_specific_add_signature@{U} (sig2: TypeSpecificAddSignature@{U})
-: TypeAddSignature :=
+Canonical Structure Type_overload_add_signature@{U} (sig2: TypeBacktrackAddBranch@{U})
+: TypeAddSignature.S :=
 {|
-  TypeAddSignature.B := try_first sig2.(TypeSpecificAddSignature.B);
-  TypeAddSignature.C := let '{| TypeSpecificAddSignature.C := C; |} := sig2 in C;
+  TypeAddSignature.B := try_first sig2.(TypeBacktrackAddBranch.B);
+  TypeAddSignature.C := let '{| TypeBacktrackAddBranch.C := C; |} := sig2 in C;
 |}.
 
 Set Warnings "-redundant-canonical-projection".
 #[global]
-Canonical Structure set_add_signature (sig2: TypeAddSignature@{Set})
-: AddSignature.Specific := Type_add_signature@{Set} sig2.
+Canonical Structure set_add_signature (sig2: TypeAddSignature.S@{Set})
+: AddSignature.S := Type_add_signature@{Set} sig2.
 Set Warnings "".
 
 #[global]
 #[universes(polymorphic)]
 Canonical Structure Type_Type_add_signature@{U}
-: TypeSpecificAddSignature@{U} :=
+: TypeBacktrackAddBranch@{U} :=
 {|
-  TypeSpecificAddSignature.B := Type@{U};
-  TypeSpecificAddSignature.C (A B: Type@{U}) := Type@{U};
+  TypeBacktrackAddBranch.B := Type@{U};
+  TypeBacktrackAddBranch.C (A B: Type@{U}) := Type@{U};
 |}.
 
 #[export]
@@ -451,9 +425,9 @@ Module ConsSignature := Binary.Signature ConsId.
 Export (canonicals) ConsSignature.
 
 Class ConsOperation (r: ConsSignature.S) :=
-cons: forall (a: untag r.(ConsSignature.A)) (b: r.(ConsSignature.B)),
+cons: forall (a: r.(ConsSignature.A)) (b: r.(ConsSignature.B)),
       (let '{| ConsSignature.C := C; |} := r
-           return untag r.(ConsSignature.A) -> r.(ConsSignature.B) -> Type
+           return r.(ConsSignature.A) -> r.(ConsSignature.B) -> Type
            in C)
         a b.
 Infix "[::]" := cons (at level 60, right associativity) : overload_scope.
@@ -463,7 +437,7 @@ Canonical Structure any_list_cons_signature (A: Type): ConsSignature.Any A := {|
   ConsSignature.Any.C _ _ := list A;
 |}.
 
-Definition list_no_match := try_second.
+Definition list_no_match (A: Type) := A.
 
 Canonical Structure unknown_list_cons_signature (A: Type)
 : ConsSignature.S :=
@@ -480,9 +454,9 @@ List.cons.
 
 Module NatConsSignature := Binary.Branch ConsSignature NatWrapper.
 Export (canonicals) NatConsSignature.
-Canonical Structure nat_cons_branch (sig2: NatConsSignature.AnySpecificBranch tt)
-: ConsSignature.Specific :=
-ConsSignature.make_specific nat (NatConsSignature.make_branch tt sig2).
+Canonical Structure nat_cons_branch (sig2: NatConsSignature.BacktrackBranch tt)
+: ConsSignature.S :=
+ConsSignature.make_A_branch nat (NatConsSignature.A_branch tt sig2).
 
 Canonical Structure nat_list_Z_cons_signature
 : NatConsSignature.S tt :=
@@ -504,16 +478,16 @@ Canonical Structure any_Ensemble_cons_signature (A: Type): ConsSignature.Any A :
 Definition Ensemble_no_match (A: Type) := A.
 
 Canonical Structure unknown_Ensemble_cons_signature (A: Type)
-: ConsSignature.Specific :=
+: ConsSignature.S :=
 {|
-  ConsSignature.Specific.A := Ensemble_no_match A;
-  ConsSignature.Specific.B := Ensemble A;
-  ConsSignature.Specific.C _ _ := Ensemble A;
+  ConsSignature.A := Ensemble_no_match A;
+  ConsSignature.B := Ensemble A;
+  ConsSignature.C _ _ := Ensemble A;
 |}.
 
 #[export]
 Instance any_Ensemble_cons (A: Type)
-: ConsOperation (ConsSignature.specific (unknown_Ensemble_cons_signature A)) :=
+: ConsOperation (unknown_Ensemble_cons_signature A) :=
 fun a e => Add _ e a.
 
 Theorem list_in_cons : forall A (a: A) (l: list A), List.In a (a [::] l).

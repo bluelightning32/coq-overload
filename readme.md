@@ -69,9 +69,9 @@ the list. So it is safe to open the same scope multiple times.
 In the below code, replace "overload" and "o" with names specific to your
 project.
 ```
-  Declare Scope overload_scope.
-  Delimit Scope overload_scope with o.
-  Open Scope overload_scope.
+Declare Scope overload_scope.
+Delimit Scope overload_scope with o.
+Open Scope overload_scope.
 ```
 
 ## Declaring an overloadable notation
@@ -99,19 +99,19 @@ import that module.
 Replace `LE` in the below code with an abbreviation that better describes your
 overloadable notation.
 ```
-  Module LEId: SigId.
-  End LEId.
-  Module LESignature := Binary.Signature LEId.
-  Export (canonicals) LESignature.
+Module LEId: SigId.
+End LEId.
+Module LESignature := Binary.Signature LEId.
+Export (canonicals) LESignature.
 ```
 
 In addition to the overload signature, an overload type class must be declared.
 Replace `LE` and `le` with abbreviations that match the signature name above.
 ```
-  Class LEOperation (r: LESignature.S) :=
-  le: forall (a: untag r.(LESignature.A)) (b: r.(LESignature.B)),
-      (let '{| LESignature.C := C; |} := r
-         return (untag r.(LESignature.A) -> r.(LESignature.B) -> Type) in C) a b.
+Class LEOperation (r: LESignature.S) :=
+le: forall (a: r.(LESignature.A)) (b: r.(LESignature.B)),
+    (let '{| LESignature.C := C; |} := r
+       return (r.(LESignature.A) -> r.(LESignature.B) -> Type) in C) a b.
 ```
 
 Finally declare the notation itself, and have it call the function from the
@@ -120,12 +120,12 @@ information must be provided as shown below. The easiest way to determine them
 is to look up a similar existing notation, such as by running
 `Print Notation "_ <= _".`.
 ```
-  Infix "<==" := le (at level 70, no associativity) : overload_scope.
+Infix "<==" := le (at level 70, no associativity) : overload_scope.
 ```
 
 However, if the notation already exists for other scopes, then leave out the level and associativity.
 ```
-  Infix "<=" := le : overload_scope.
+Infix "<=" := le : overload_scope.
 ```
 
 ## Branching on the first argument with a known head constant
@@ -156,10 +156,10 @@ TypeModule across different overloaded operators. The example below is for
 `nat`. For a simple type (not type family), use this example as a template and
 replace `nat` and `Nat` with your type.
 ```
-  Module NatWrapper<: TypeModule.
-    Definition P := unit.
-    Definition T (_: P) := nat.
-  End NatWrapper.
+Module NatWrapper<: TypeModule.
+  Definition P := unit.
+  Definition T (_: P) := nat.
+End NatWrapper.
 ```
 
 The above example only works for simple types, not type families. For type
@@ -168,10 +168,10 @@ family parameters into the `P` type, then define `T` to unpack them and return
 an instance of the type family. Replace `list` and `List` with a description of
 your type.
 ```
-  Module ListWrapper<: TypeModule.
-    Definition P := Type.
-    Definition T (A: P) := list A.
-  End ListWrapper.
+Module ListWrapper<: TypeModule.
+  Definition P := Type.
+  Definition T (A: P) := list A.
+End ListWrapper.
 ```
 
 Pass the operator signature and the type module defined above as arguments to
@@ -181,12 +181,12 @@ defined using `T` from the type module, so it must be manually defined after
 exporting the module. Replace `Z`, `LE`, `le`, and `tt` as appropriate in the
 below example.
 ```
-  Module ZLESignature := Binary.Branch LESignature ZWrapper.
-  Export (canonicals) ZLESignature.
+Module ZLESignature := Binary.Branch LESignature ZWrapper.
+Export (canonicals) ZLESignature.
 
-  Canonical Structure Z_le_branch (sig2: ZLESignature.AnySpecificBranch tt)
-  : LESignature.Specific :=
-  LESignature.make_specific Z (ZLESignature.make_branch tt sig2).
+Canonical Structure Z_le_branch (sig2: ZLESignature.BacktrackBranch tt)
+: LESignature.S :=
+LESignature.make_A_branch Z (ZLESignature.A_branch tt sig2).
 ```
 
 ## Overloading the operator with known head constants
@@ -203,11 +203,11 @@ is why the first two parameters are discarded by using `_`. In the below
 example, replace `LE` with the operator name, `Z` with the type of the first
 argument, `nat` with the type of the second, and `Prop` with the output type.
 ```
-  Canonical Structure Z_nat_le_signature: ZLESignature.S tt :=
-  {|
-    ZLESignature.B := nat;
-    ZLESignature.C _ _ := Prop;
-  |}.
+Canonical Structure Z_nat_le_signature: ZLESignature.S tt :=
+{|
+  ZLESignature.B := nat;
+  ZLESignature.C _ _ := Prop;
+|}.
 ```
 
 Next declare the operation, which specifies which function to run when the
@@ -220,9 +220,9 @@ the type of the first argument, `nat` with the type of the second, `LE` with
 the overloaded notation name, and the function body with your overloaded
 operation.
 ```
-  #[export]
-  Instance Z_nat_le: LEOperation _ :=
-  fun a b => (a <= Z.of_nat b)%Z.
+#[export]
+Instance Z_nat_le: LEOperation _ :=
+fun a b => (a <= Z.of_nat b)%Z.
 ```
 
 ## Overloading the operator with a wildcard for the first argument
@@ -238,10 +238,10 @@ First declare the signature for the overload. In the below example, replace
 `list` with the type of the second argument, `cons` with the operator name,
 and `Cons` with the operator name. Set `C` to the output type of the overload.
 ```
-  Canonical Structure any_list_cons_signature (A: Type): ConsSignature.Any A := {|
-    ConsSignature.Any.B := list A;
-    ConsSignature.Any.C _ _ := list A;
-  |}.
+Canonical Structure any_list_cons_signature (A: Type): ConsSignature.Any A := {|
+  ConsSignature.Any.B := list A;
+  ConsSignature.Any.C _ _ := list A;
+|}.
 ```
 
 Next define the overload for the operator, using the previously declared
@@ -249,10 +249,10 @@ signature. Replace `list` with the type of the second argument, `cons` with
 the operator name, `Cons` with the operator name, and `List.cons` with the
 operation.
 ```
-  #[export]
-  Instance any_list_cons (A: Type)
-  : ConsOperation (ConsSignature.any A _) :=
-  List.cons.
+#[export]
+Instance any_list_cons (A: Type)
+: ConsOperation (ConsSignature.any A _) :=
+List.cons.
 ```
 
 Note that even though the first argument is a wildcard, sometimes the
@@ -261,8 +261,8 @@ first argument is unknown. For example, with the above overload, the first
 following command succeeds because `a`'s type is known, but the second fails
 because `a`'s type is unknown.
 ```
-  Succeed Theorem list_in_cons : forall A (a: A) (l: list A), List.In a (a [::] l).
-  Fail Theorem list_in_cons' : forall A (a: A) (l: list A), List.In a (a [::] l).
+Succeed Theorem list_in_cons : forall A (a: A) (l: list A), List.In a (a [::] l).
+Fail Theorem list_in_cons' : forall A (a: A) (l: list A), List.In a (a [::] l).
 ```
 
 ## Overloading the operator when the type of the first argument is unknown
@@ -280,15 +280,15 @@ known, so that it only matches using the second argument. Replace `list` with
 the type of the first argument, second argument, or output type where
 appropriate. Replace `Cons` and `cons` with the name of your operator.
 ```
-  Definition list_no_match := try_second.
+Definition list_no_match (A: Type) := A.
 
-  Canonical Structure unknown_list_cons_signature (A: Type)
-  : ConsSignature.S :=
-  {|
-    ConsSignature.A := list_no_match A;
-    ConsSignature.B := list A;
-    ConsSignature.C _ _ := list A;
-  |}.
+Canonical Structure unknown_list_cons_signature (A: Type)
+: ConsSignature.S :=
+{|
+  ConsSignature.A := list_no_match A;
+  ConsSignature.B := list A;
+  ConsSignature.C _ _ := list A;
+|}.
 ```
 
 Typically the unknown signature is added in addition to another signature for
@@ -379,23 +379,23 @@ First declare the signature. In the following example, replace `le` and `LE`
 with name of the operator. Replace `relation` with the type of the first and
 second arguments. Replace `Prop` with the output type.
 ```
-  Canonical Structure relation_relation_le_signature (A: Type)
-  : LESignature.Specific :=
-  {|
-    LESignature.Specific.A := relation A;
-    LESignature.Specific.B := relation A;
-    LESignature.Specific.C _ _:= Prop;
-  |}.
+Canonical Structure relation_relation_le_signature (A: Type)
+: LESignature.S :=
+{|
+  LESignature.A := relation A;
+  LESignature.B := relation A;
+  LESignature.C _ _:= Prop;
+|}.
 ```
 
 Next define the overload. Replace `le` and `LE` with name of the operator.
 Replace `relation` with the type of the first and second arguments. Replace the
 body of the function with the overloaded behavior.
 ```
-  #[export]
-  Instance relation_relation_le (A: Type)
-  : LEOperation _ :=
-  fun (R S: relation A) => RelationClasses.subrelation R S.
+#[export]
+Instance relation_relation_le (A: Type)
+: LEOperation _ :=
+fun (R S: relation A) => RelationClasses.subrelation R S.
 ```
 
 ## Universe polymorphic overloads
@@ -414,78 +414,79 @@ polymorphic type, one has to essentially make a copy of the `Branch` module
 with the correct polymorhpism added. The below example does that and
 specializes an add operator for `Type@{U}` for the first argument.
 ```
-  Module TypeAddSignature.
-    Universe B C.
-    #[universes(polymorphic)]
-    Structure TypeAddSignature@{U} := {
-      B: TaggedType@{B};
-      #[canonical=no] C: Type@{U} -> untag B -> Type@{C};
-    }.
-  End TypeAddSignature.
-  Export TypeAddSignature(TypeAddSignature).
-
-  Definition Type_no_match (B: TaggedType): Type := untag B.
-
+Module TypeAddSignature.
+  Universe B C.
   #[universes(polymorphic)]
-  Canonical Structure Type_add_signature@{U} (sig2: TypeAddSignature)
-  : AddSignature.Specific :=
-  {|
-    AddSignature.Specific.A := Type@{U};
-    AddSignature.Specific.B := Type_no_match (sig2.(TypeAddSignature.B));
-    AddSignature.Specific.C := let '{| TypeAddSignature.C := C; |} := sig2 in C;
-  |}.
+  Structure S@{U} := {
+    B: TaggedType@{B};
+    #[canonical=no] C: Type@{U} -> untag B -> Type@{C};
+  }.
+End TypeAddSignature.
 
+Definition Type_no_match (B: TaggedType): Type := untag B.
+
+#[universes(polymorphic)]
+Canonical Structure Type_add_signature@{U} (sig2: TypeAddSignature.S)
+: AddSignature.S :=
+{|
+  AddSignature.A := Type@{U};
+  AddSignature.B := Type_no_match (sig2.(TypeAddSignature.B));
+  AddSignature.C := let '{| TypeAddSignature.C := C; |} := sig2 in C;
+|}.
+
+#[universes(polymorphic)]
+Canonical Structure Type_any_add_branch@{U} (sig2: AddSignature.Any Type@{U})
+: TypeAddSignature.S :=
+{|
+  TypeAddSignature.B := try_second sig2.(AddSignature.Any.B);
+  TypeAddSignature.C := let '{| AddSignature.Any.C := C; |} := sig2 in C;
+|}.
+
+Module TypeBacktrackAddBranch.
   #[universes(polymorphic)]
-  Canonical Structure Type_any_add_branch@{U} (sig2: AddSignature.Any Type@{U})
-  : TypeAddSignature :=
-  {|
-    TypeAddSignature.B := try_second sig2.(AddSignature.Any.B);
-    TypeAddSignature.C := let '{| AddSignature.Any.C := C; |} := sig2 in C;
-  |}.
+  Structure TypeBacktrackAddBranch@{U} := {
+    B: Type@{TypeAddSignature.B};
+    #[canonical=no] C: Type@{U} -> B -> Type@{TypeAddSignature.C};
+  }.
+End TypeBacktrackAddBranch.
+Export TypeBacktrackAddBranch(TypeBacktrackAddBranch).
 
-  Module TypeSpecificAddSignature.
-    #[universes(polymorphic)]
-    Structure TypeSpecificAddSignature@{U} := {
-      B: Type@{TypeAddSignature.B};
-      #[canonical=no] C: Type@{U} -> B -> Type@{TypeAddSignature.C};
-    }.
-  End TypeSpecificAddSignature.
-  Export TypeSpecificAddSignature(TypeSpecificAddSignature).
+#[universes(polymorphic)]
+Canonical Structure Type_overload_add_signature@{U} (sig2: TypeBacktrackAddBranch@{U})
+: TypeAddSignature.S :=
+{|
+  TypeAddSignature.B := try_first sig2.(TypeBacktrackAddBranch.B);
+  TypeAddSignature.C := let '{| TypeBacktrackAddBranch.C := C; |} := sig2 in C;
+|}.
 
-  #[universes(polymorphic)]
-  Canonical Structure Type_specific_add_signature@{U} (sig2: TypeSpecificAddSignature@{U})
-  : TypeAddSignature :=
-  {|
-    TypeAddSignature.B := try_first sig2.(TypeSpecificAddSignature.B);
-    TypeAddSignature.C := let '{| TypeSpecificAddSignature.C := C; |} := sig2 in C;
-  |}.
-
-  Set Warnings "-redundant-canonical-projection".
-  Canonical Structure set_add_signature (sig2: TypeAddSignature@{Set})
-  : AddSignature.Specific := Type_add_signature@{Set} sig2.
-  Set Warnings "".
+Set Warnings "-redundant-canonical-projection".
+#[global]
+Canonical Structure set_add_signature (sig2: TypeAddSignature.S@{Set})
+: AddSignature.S := Type_add_signature@{Set} sig2.
+Set Warnings "".
 ```
 
 Next, use the branch declared above (which added support for overloading the
 first argument) to declare the signature for the combination of the types in
 the first and second arguments.
 ```
-  #[universes(polymorphic)]
-  Canonical Structure Type_Type_add_signature@{U}
-  : TypeSpecificAddSignature@{U} :=
-  {|
-    TypeSpecificAddSignature.B := Type@{U};
-    TypeSpecificAddSignature.C (A B: Type@{U}) := Type@{U};
-  |}.
+#[global]
+#[universes(polymorphic)]
+Canonical Structure Type_Type_add_signature@{U}
+: TypeBacktrackAddBranch@{U} :=
+{|
+  TypeBacktrackAddBranch.B := Type@{U};
+  TypeBacktrackAddBranch.C (A B: Type@{U}) := Type@{U};
+|}.
 ```
 
 Finally define the overload that describes what operation is performed when the
 specific types are passed to the operator.
 ```
-  #[export]
-  #[universes(polymorphic)]
-  Instance type_type_add@{U} : AddOperation _ :=
-  fun (A: Type@{U}) (B: Type@{U}) => (A + B)%type.
+#[export]
+#[universes(polymorphic)]
+Instance type_type_add@{U} : AddOperation _ :=
+fun (A: Type@{U}) (B: Type@{U}) => (A + B)%type.
 ```
 
 ## Defining an inductive type constructor that is an overloaded operator
@@ -500,40 +501,40 @@ the signature can be passed to the operation when declaring the type
 constructor. After the inductive type is defined, the type class instance can
 be registered using `Existing Instance`. Example:
 ```
-  Inductive AltList (A: Type): Type :=
-  | alt_nil: AltList A
-  | alt_cons: ConsOperation
-              {|
-                ConsSignature.A:= {| untag:= A; |};
-                ConsSignature.B:= AltList A;
-                ConsSignature.C _ _ := AltList A;
-              |}.
-  Arguments alt_nil {A}.
-  Arguments alt_cons {A}.
-  #[export]
-  Existing Instance alt_cons.
+Inductive AltList (A: Type): Type :=
+| alt_nil: AltList A
+| alt_cons: ConsOperation
+            {|
+              ConsSignature.A:= {| untag:= A; |};
+              ConsSignature.B:= AltList A;
+              ConsSignature.C _ _ := AltList A;
+            |}.
+Arguments alt_nil {A}.
+Arguments alt_cons {A}.
+#[export]
+Existing Instance alt_cons.
 ```
 
 Finally the signature can be defined after the inductive type definition.
 Example:
 ```
-  Canonical Structure any_AltList_cons_signature (A: Type)
-  : ConsSignature.Any A :=
-  {|
-    ConsSignature.Any.B := AltList A;
-    ConsSignature.Any.C _ _ := AltList A;
-  |}.
+Canonical Structure any_AltList_cons_signature (A: Type)
+: ConsSignature.Any A :=
+{|
+  ConsSignature.Any.B := AltList A;
+  ConsSignature.Any.C _ _ := AltList A;
+|}.
 ```
 
 Unfortunately, the overloaded notation does not work for patterns in the match
 construct. The constructor name has to be used instead. Example:
 ```
-  Fixpoint alt_reverse_aux {A: Type} (l: AltList A) (acc: AltList A)
-  : AltList A :=
-  match l with
-  | alt_nil => acc
-  | (* Can't use: h [::] l *) alt_cons h l => alt_reverse_aux l (h [::] acc)
-  end.
+Fixpoint alt_reverse_aux {A: Type} (l: AltList A) (acc: AltList A)
+: AltList A :=
+match l with
+| alt_nil => acc
+| (* Can't use: h [::] l *) alt_cons h l => alt_reverse_aux l (h [::] acc)
+end.
 ```
 
 ## Transparency for the `auto` tactic
@@ -544,22 +545,22 @@ using `<=` instead, `auto with arith` would be able to solve it. However, when
 the goal uses `<==`, `auto with arith` fails to solve it, because the standard
 library lemmas are defined using `<=` which does not match `<==`.
 ```
-  Goal forall (m n: nat), S m <== S n -> m <== n.
-  Proof.
-    Fail progress auto with arith.
-  Abort.
+Goal forall (m n: nat), S m <== S n -> m <== n.
+Proof.
+  Fail progress auto with arith.
+Abort.
 ```
 
 To solve this, mark the `<==` operator and its specific overload as transparent
 so that auto can unfold them and match the standard library lemmas.
 ```
-  #[export]
-  Hint Unfold nat_le le : overload.
+#[export]
+Hint Unfold nat_le le : overload.
 
-  Goal forall (m n: nat), S m <== S n -> m <== n.
-  Proof.
-    auto with arith overload.
-  Qed.
+Goal forall (m n: nat), S m <== S n -> m <== n.
+Proof.
+  auto with arith overload.
+Qed.
 ```
 
 ## Type class transparency for overloads that are relations
@@ -568,38 +569,38 @@ In the following example, the type of `nat_le` is judgementally equal to
 `relation nat`. As such `nat_le` can be defined as a `PreOrder` like other
 relations.
 ```
-  #[global]
-  Program Instance nat_le_preorder: PreOrder nat_le.
-  Next Obligation.
-    unfold nat_le.
-    eauto.
-  Qed.
-  Next Obligation.
-    unfold nat_le.
-    eauto with arith.
-  Qed.
-  Fail Next Obligation.
+#[global]
+Program Instance nat_le_preorder: PreOrder nat_le.
+Next Obligation.
+  unfold nat_le.
+  eauto.
+Qed.
+Next Obligation.
+  unfold nat_le.
+  eauto with arith.
+Qed.
+Fail Next Obligation.
 ```
 
 However, sometimes the type class resolution algorithm will fail to find the
 `Reflexive` instance defined above, because the type of `nat_le` is not
 syntactically equal to `relation nat`.
 ```
-  Fail Definition nat_refl' := (fun r : Reflexive nat_le => r) _.
+Fail Definition nat_refl' := (fun r : Reflexive nat_le => r) _.
 ```
 
 Declaring the operation as transparent allows the type class resolution
 algorithm to unfold it and discover that `nat_le`'s type is equal to `relation
 nat`.
 ```
-  #[export]
-  Typeclasses Transparent LEOperation.
+#[export]
+Typeclasses Transparent LEOperation.
 
-  Goal forall (m n: nat), S m <== S n -> m <== n.
-  Proof.
-    (* Now auto works because it can see that <== is <=. *)
-    auto with arith.
-  Qed.
+Goal forall (m n: nat), S m <== S n -> m <== n.
+Proof.
+  (* Now auto works because it can see that <== is <=. *)
+  auto with arith.
+Qed.
 ```
 
 ## Limitations
