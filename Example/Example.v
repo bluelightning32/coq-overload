@@ -169,11 +169,10 @@ Definition crelation_no_match := try_second.
 Canonical Structure unknown_crelation_le_signature@{A1 A2 CRelation C}
   (A: Type@{A1})
 : LESignature.BacktrackBranch@{crelation_no_match.u0 crelation_no_match.u0 C} :=
-{|
-  LESignature.BacktrackBranch.A := crelation_no_match (crelation@{A1 A2} A);
-  LESignature.BacktrackBranch.B := crelation@{A1 A2} A;
-  LESignature.BacktrackBranch.C _ _ := Type@{CRelation};
-|}.
+LESignature.BacktrackBranch.Build_S@{crelation_no_match.u0 crelation_no_match.u0 C}
+  (crelation_no_match (crelation@{A1 A2} A))
+  (crelation@{A1 A2} A)
+  (fun _ _ => Type@{CRelation}).
 
 #[export]
 #[universes(polymorphic)]
@@ -332,7 +331,8 @@ Canonical Structure Type_add_signature@{A B} (sig2: TypeAddSignature.S)
 |}.
 
 #[universes(polymorphic)]
-Canonical Structure Type_any_add_branch@{U} (sig2: AddSignature.Any Type@{U})
+Canonical Structure Type_any_add_branch@{A1 A2 B C}
+  (sig2: AddSignature.Any@{A2 B C} Type@{A1})
 : TypeAddSignature.S :=
 {|
   TypeAddSignature.B := try_second sig2.(AddSignature.Any.B);

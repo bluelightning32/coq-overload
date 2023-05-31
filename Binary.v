@@ -10,7 +10,7 @@ Canonical Structure try_first@{U} (A: Type@{U}) := try_second@{U} A.
 
 Module Type SignatureTyp.
   Module BacktrackBranch.
-    #[universes(polymorphic)]
+    #[universes(polymorphic, cumulative)]
     Structure S@{A B C} := {
       A: TaggedType@{A};
       B: Type@{B};
@@ -21,9 +21,10 @@ Module Type SignatureTyp.
   Notation BacktrackBranch := BacktrackBranch.S.
 
   Module Any.
-    Structure Any (A: Type) := {
-      B: Type;
-      #[canonical=no] C: A -> B -> Type;
+    #[universes(polymorphic)]
+    Structure Any@{A B C} (A: Type@{A}) := {
+      B: Type@{B};
+      #[canonical=no] C: A -> B -> Type@{C};
     }.
     Arguments B {A}.
     Arguments C {A}.
@@ -40,7 +41,7 @@ End SignatureTyp.
 
 Module Signature (Id: SigId) <: SignatureTyp.
   Module BacktrackBranch.
-    #[universes(polymorphic)]
+    #[universes(polymorphic, cumulative)]
     Structure S@{A B C} := {
       A: TaggedType@{A};
       B: Type@{B};
@@ -51,9 +52,10 @@ Module Signature (Id: SigId) <: SignatureTyp.
   Notation BacktrackBranch := BacktrackBranch.S.
 
   Module Any.
-    Structure Any (A: Type) := {
-      B: Type;
-      #[canonical=no] C: A -> B -> Type;
+    #[universes(polymorphic)]
+    Structure Any@{A B C} (A: Type@{A}) := {
+      B: Type@{B};
+      #[canonical=no] C: A -> B -> Type@{C};
     }.
     Arguments B {A}.
     Arguments C {A}.
@@ -67,7 +69,9 @@ Module Signature (Id: SigId) <: SignatureTyp.
     #[canonical=no] C: A -> B -> Type@{C};
   }.
 
-  Canonical Structure fallback_branch (A: Type) (sig2: Any A)
+  #[universes(polymorphic)]
+  Canonical Structure fallback_branch@{A B C} (A: Type@{A})
+                                              (sig2: Any@{A B C} A)
   : BacktrackBranch :=
   {|
     BacktrackBranch.A := try_second A;

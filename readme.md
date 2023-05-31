@@ -404,10 +404,10 @@ fun (R S: relation A) => RelationClasses.subrelation R S.
 
 ## Universe polymorphic overloads
 
-The overload system does not work well with universe polymorphism. The
+The overload system does not completely work with universe polymorphism. The
 unification algorithm appears to resist unifying universe parameters. That
-said, the type of arguments may be universe polymorphic, but they are
-unfortunately bounded because they have to fit into predeclared non-polymorhpic
+said, the type of arguments may be universe polymorphic, but the output type is
+unfortunately bounded because it has to fit into predeclared non-polymorhpic
 types.
 
 Different polymorphic types can have different numbers of universe parameters.
@@ -419,27 +419,29 @@ with the correct polymorhpism added. The below example does that and
 specializes an add operator for `Type@{U}` for the first argument.
 ```
 Module TypeAddSignature.
-  Universe B C.
+  Universe C.
   #[universes(polymorphic)]
-  Structure S@{U} := {
+  Structure S@{A B} := {
     B: TaggedType@{B};
-    #[canonical=no] C: Type@{U} -> untag B -> Type@{C};
+    #[canonical=no] C: Type@{A} -> untag B -> Type@{C};
   }.
 End TypeAddSignature.
 
 Definition Type_no_match (B: TaggedType): Type := untag B.
 
+Universe Type_A.
 #[universes(polymorphic)]
-Canonical Structure Type_add_signature@{U} (sig2: TypeAddSignature.S)
-: AddSignature.S :=
+Canonical Structure Type_add_signature@{A B} (sig2: TypeAddSignature.S)
+: AddSignature.S@{Type_A B TypeAddSignature.C} :=
 {|
-  AddSignature.A := Type@{U};
+  AddSignature.A := Type@{A};
   AddSignature.B := Type_no_match (sig2.(TypeAddSignature.B));
   AddSignature.C := let '{| TypeAddSignature.C := C; |} := sig2 in C;
 |}.
 
 #[universes(polymorphic)]
-Canonical Structure Type_any_add_branch@{U} (sig2: AddSignature.Any Type@{U})
+Canonical Structure Type_any_add_branch@{A1 A2 B C}
+  (sig2: AddSignature.Any@{A2 B C} Type@{A1})
 : TypeAddSignature.S :=
 {|
   TypeAddSignature.B := try_second sig2.(AddSignature.Any.B);
@@ -448,15 +450,15 @@ Canonical Structure Type_any_add_branch@{U} (sig2: AddSignature.Any Type@{U})
 
 Module TypeBacktrackAddBranch.
   #[universes(polymorphic)]
-  Structure TypeBacktrackAddBranch@{U} := {
-    B: Type@{TypeAddSignature.B};
-    #[canonical=no] C: Type@{U} -> B -> Type@{TypeAddSignature.C};
+  Structure TypeBacktrackAddBranch@{A B} := {
+    B: Type@{B};
+    #[canonical=no] C: Type@{A} -> B -> Type@{TypeAddSignature.C};
   }.
 End TypeBacktrackAddBranch.
 Export TypeBacktrackAddBranch(TypeBacktrackAddBranch).
 
 #[universes(polymorphic)]
-Canonical Structure Type_overload_add_signature@{U} (sig2: TypeBacktrackAddBranch@{U})
+Canonical Structure Type_overload_add_signature@{A B} (sig2: TypeBacktrackAddBranch@{A B})
 : TypeAddSignature.S :=
 {|
   TypeAddSignature.B := try_first sig2.(TypeBacktrackAddBranch.B);
@@ -464,8 +466,9 @@ Canonical Structure Type_overload_add_signature@{U} (sig2: TypeBacktrackAddBranc
 |}.
 
 Set Warnings "-redundant-canonical-projection".
-Canonical Structure set_add_signature (sig2: TypeAddSignature.S@{Set})
-: AddSignature.S := Type_add_signature@{Set} sig2.
+#[universes(polymorphic)]
+Canonical Structure set_add_signature@{B} (sig2: TypeAddSignature.S@{Set B})
+: AddSignature.S := Type_add_signature@{Set B} sig2.
 Set Warnings "".
 ```
 
