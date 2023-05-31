@@ -167,7 +167,7 @@ Definition crelation_no_match := try_second.
 #[universes(polymorphic)]
 Canonical Structure unknown_crelation_le_signature@{A1 A2 CRelation C}
   (A: Type@{A1})
-: LESignature.BacktrackBranch :=
+: LESignature.BacktrackBranch@{crelation_no_match.u0 crelation_no_match.u0 C} :=
 {|
   LESignature.BacktrackBranch.A := crelation_no_match (crelation@{A1 A2} A);
   LESignature.BacktrackBranch.B := crelation@{A1 A2} A;

@@ -1,6 +1,6 @@
 Require Import Overload.SigId.
 
-#[universes(polymorphic, cumulative)]
+#[universes(polymorphic)]
 Structure TaggedType@{U} := try_second {
   untag: Type@{U};
 }.
@@ -9,10 +9,11 @@ Canonical Structure try_first (A: Type) := try_second A.
 
 Module Type SignatureTyp.
   Module BacktrackBranch.
-    Structure S := {
-      A: TaggedType;
-      B: Type;
-      #[canonical=no] C: untag A -> B -> Type;
+    #[universes(polymorphic)]
+    Structure S@{A B C} := {
+      A: TaggedType@{A};
+      B: Type@{B};
+      #[canonical=no] C: untag A -> B -> Type@{C};
     }.
     Arguments C : simpl never.
   End BacktrackBranch.
@@ -37,10 +38,11 @@ End SignatureTyp.
 
 Module Signature (Id: SigId) <: SignatureTyp.
   Module BacktrackBranch.
-    Structure S := {
-      A: TaggedType;
-      B: Type;
-      #[canonical=no] C: untag A -> B -> Type;
+    #[universes(polymorphic)]
+    Structure S@{A B C} := {
+      A: TaggedType@{A};
+      B: Type@{B};
+      #[canonical=no] C: untag A -> B -> Type@{C};
     }.
     Arguments C : simpl never.
   End BacktrackBranch.
