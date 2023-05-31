@@ -1,4 +1,5 @@
 -Q ./ "Overload"
 Binary.v
+BinaryRelation.v
 SigId.v
 Tactics.v

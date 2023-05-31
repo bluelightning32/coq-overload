@@ -100,17 +100,21 @@ Module Signature (Id: SigId) <: SignatureTyp.
   Arguments make_A_branch : simpl never.
 End Signature.
 
-Universe TypeModule.
+(* Declare these universes outside of the Branch functor for easier access.
+   Even if they were declared within the functor, they would have the same
+   value for all instances of the functor. *)
+Universe A.
+Universe B.
 
 Module Type TypeModule.
-  Parameter P: Type@{TypeModule}.
-  Parameter T: P -> Type@{TypeModule}.
+  Parameter P: Type@{A}.
+  Parameter T: P -> Type@{A}.
 End TypeModule.
 
 Module Branch (Sig: SignatureTyp) (T: TypeModule).
   Module BacktrackBranch.
     Structure S (p: T.P) := {
-      B: TaggedType;
+      B: TaggedType@{B};
       #[canonical=no] C: T.T p -> untag B -> Type;
     }.
     Arguments B {p}.
@@ -134,7 +138,7 @@ Module Branch (Sig: SignatureTyp) (T: TypeModule).
   |}.
 
   Structure S (p: T.P) := {
-    B: Type;
+    B: Type@{B};
     #[canonical=no] C: T.T p -> B -> Type;
   }.
   Arguments B {p}.
