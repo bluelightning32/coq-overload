@@ -134,7 +134,7 @@ Canonical Structure relation_relation_le_signature (A: Type)
 {|
   LESignature.A := relation A;
   LESignature.B := relation A;
-  LESignature.C _ _:= Prop;
+  LESignature.C _ _ := Prop;
 |}.
 
 Definition relation_no_match := try_second.

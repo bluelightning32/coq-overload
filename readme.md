@@ -340,7 +340,7 @@ known overload.
 Theorem cons_list_unknown_to_any
 : forall A (a: A) (l: list A),
   cons (r:= unknown_list_cons_signature A) a l =
-    cons (r:= ConsSignature.any A (any_list_cons_signature A)) a l.
+    cons (r:= ConsSignature.fallback_branch A (any_list_cons_signature A)) a l.
 Proof.
   reflexivity.
 Qed.
@@ -388,7 +388,7 @@ Canonical Structure relation_relation_le_signature (A: Type)
 {|
   LESignature.A := relation A;
   LESignature.B := relation A;
-  LESignature.C _ _:= Prop;
+  LESignature.C _ _ := Prop;
 |}.
 ```
 
@@ -404,19 +404,26 @@ fun (R S: relation A) => RelationClasses.subrelation R S.
 
 ## Universe polymorphic overloads
 
-The overload system does not completely work with universe polymorphism. The
-unification algorithm appears to resist unifying universe parameters. That
-said, the type of arguments may be universe polymorphic, but the output type is
-unfortunately bounded because it has to fit into predeclared non-polymorhpic
-types.
+The `Binary.Branch` module functor is used to overload an operator based on the
+type of first argument. That type must be in the `Binary.A` universe. It
+furthermore restricts the type of the second argument to be in the `Binary.B`
+universe.
 
-Different polymorphic types can have different numbers of universe parameters.
-There is no way to pack multiple universe parameters into a single tuple, like
-can be done with regular parameters. So there is no way to universally factor
-out the common code into a module. So to overload an operator with a universe
-polymorphic type, one has to essentially make a copy of the `Branch` module
-with the correct polymorhpism added. The below example does that and
-specializes an add operator for `Type@{U}` for the first argument.
+There is no way to create a module functor that accepts an arbitrary universe
+as input. If one tries to add a universe to a module type, it ends up being
+defined within the module type instead of defined by each module that
+implements the module type. That is, every instance of the module type would
+end up with the same universe.
+
+If `Binary.Branch` needs to be used with specific universes, but does not need
+to be fully polymorphic, then make a copy of it, like the
+`BinaryRelation.Branch` module functor.
+
+The `Binary.Branch` module functor cannot be used for fully polymorphic types.
+So to overload an operator with a universe polymorphic type, one has to
+essentially make a copy of the `Branch` module with the correct polymorhpism
+added. The below example does that and specializes an add operator for
+`Type@{U}` for the first argument.
 ```
 Module TypeAddSignature.
   Universe C.
@@ -477,11 +484,11 @@ first argument) to declare the signature for the combination of the types in
 the first and second arguments.
 ```
 #[universes(polymorphic)]
-Canonical Structure Type_Type_add_signature@{U}
-: TypeBacktrackAddBranch@{U} :=
+Canonical Structure Type_Type_add_signature@{A1 A2}
+: TypeBacktrackAddBranch@{A1 A2} :=
 {|
-  TypeBacktrackAddBranch.B := Type@{U};
-  TypeBacktrackAddBranch.C (A B: Type@{U}) := Type@{U};
+  TypeBacktrackAddBranch.B := Type@{A1};
+  TypeBacktrackAddBranch.C (A B: Type@{A1}) := Type@{A1};
 |}.
 ```
 
@@ -609,8 +616,6 @@ Qed.
 ```
 
 ## Limitations
-
-As described above, universe polymorphism support is limited.
 
 The overloaded notations can be used to define inductive constructors, but they
 are not understood by the match construct. As such, the constructor name (not
