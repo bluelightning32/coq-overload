@@ -18,14 +18,13 @@ End LEId.
 Module LESignature := Binary.Signature LEId.
 Export (canonicals) LESignature.
 
-#[universes(polymorphic)]
-Class LEOperation@{A B C} (r: LESignature.BacktrackBranch@{A B C}) :=
+Class LEOperation (r: LESignature.BacktrackBranch) :=
 le: forall (a: untag r.(LESignature.BacktrackBranch.A))
            (b: r.(LESignature.BacktrackBranch.B)),
     (let '{| LESignature.BacktrackBranch.C := C; |} := r
        return (untag r.(LESignature.BacktrackBranch.A) ->
                r.(LESignature.BacktrackBranch.B) ->
-               Type@{C})
+               Type)
        in C) a b.
 
 Infix "<==" := le (at level 70, no associativity) : overload_scope.
@@ -122,7 +121,9 @@ Instance list_list_le
                     LESignature.BacktrackBranch.B := A;
                     LESignature.BacktrackBranch.C _ _ := Prop;
                   |})
-: LEOperation _ :=
+: LEOperation
+  (LESignature.overload_branch
+    (list_le_branch A (ListLESignature.overload_branch A _))) :=
 lexicographical_le (@le _ o).
 
 (* If the first argument is a relation, the second argument must also be a

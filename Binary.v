@@ -88,8 +88,9 @@ Module Signature (Id: SigId) <: SignatureTyp.
     BacktrackBranch.C := let '{| C := C; |} := sig2 in C;
   |}.
 
-  Definition make_A_branch (A: Type) (packed: Any A)
-  : S :=
+  #[universes(polymorphic)]
+  Definition make_A_branch@{A B C} (A: Type@{A}) (packed: Any@{A B C} A)
+  : S@{A B C} :=
   let '{| Any.B := B; Any.C := C; |} := packed in
   {|
     A := A;
@@ -99,9 +100,11 @@ Module Signature (Id: SigId) <: SignatureTyp.
   Arguments make_A_branch : simpl never.
 End Signature.
 
+Universe TypeModule.
+
 Module Type TypeModule.
-  Parameter P: Type.
-  Parameter T: P -> Type.
+  Parameter P: Type@{TypeModule}.
+  Parameter T: P -> Type@{TypeModule}.
 End TypeModule.
 
 Module Branch (Sig: SignatureTyp) (T: TypeModule).
