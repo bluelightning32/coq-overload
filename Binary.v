@@ -5,7 +5,8 @@ Structure TaggedType@{U} := try_second {
   untag: Type@{U};
 }.
 
-Canonical Structure try_first (A: Type) := try_second A.
+#[universes(polymorphic)]
+Canonical Structure try_first@{U} (A: Type@{U}) := try_second@{U} A.
 
 Module Type SignatureTyp.
   Module BacktrackBranch.
@@ -29,10 +30,11 @@ Module Type SignatureTyp.
   End Any.
   Notation Any := Any.Any.
 
-  Structure S := {
-    A: Type;
-    B: Type;
-    #[canonical=no] C: A -> B -> Type;
+  #[universes(polymorphic)]
+  Structure S@{A B C} := {
+    A: Type@{A};
+    B: Type@{B};
+    #[canonical=no] C: A -> B -> Type@{C};
   }.
 End SignatureTyp.
 
@@ -58,10 +60,11 @@ Module Signature (Id: SigId) <: SignatureTyp.
   End Any.
   Notation Any := Any.Any.
 
-  Structure S := {
-    A: Type;
-    B: Type;
-    #[canonical=no] C: A -> B -> Type;
+  #[universes(polymorphic)]
+  Structure S@{A B C} := {
+    A: Type@{A};
+    B: Type@{B};
+    #[canonical=no] C: A -> B -> Type@{C};
   }.
 
   Canonical Structure fallback_branch (A: Type) (sig2: Any A)
@@ -72,8 +75,9 @@ Module Signature (Id: SigId) <: SignatureTyp.
     BacktrackBranch.C := let '{| Any.C := C; |} := sig2 in C;
   |}.
 
-  Canonical Structure overload_branch (sig2: S)
-  : BacktrackBranch :=
+  #[universes(polymorphic)]
+  Canonical Structure overload_branch@{A B C} (sig2: S@{A B C})
+  : BacktrackBranch@{A B C} :=
   {|
     BacktrackBranch.A := try_first sig2.(A);
     BacktrackBranch.B := sig2.(B);

@@ -18,13 +18,14 @@ End LEId.
 Module LESignature := Binary.Signature LEId.
 Export (canonicals) LESignature.
 
-Class LEOperation (r: LESignature.BacktrackBranch) :=
+#[universes(polymorphic)]
+Class LEOperation@{A B C} (r: LESignature.BacktrackBranch@{A B C}) :=
 le: forall (a: untag r.(LESignature.BacktrackBranch.A))
            (b: r.(LESignature.BacktrackBranch.B)),
     (let '{| LESignature.BacktrackBranch.C := C; |} := r
        return (untag r.(LESignature.BacktrackBranch.A) ->
                r.(LESignature.BacktrackBranch.B) ->
-               Type)
+               Type@{C})
        in C) a b.
 
 Infix "<==" := le (at level 70, no associativity) : overload_scope.
@@ -153,13 +154,13 @@ Instance relation_relation_le (A: Type)
 fun (R S: relation A) => RelationClasses.subrelation R S.
 
 #[universes(polymorphic)]
-Canonical Structure crelation_crelation_le_signature@{A1 A2 CRelation}
+Canonical Structure crelation_crelation_le_signature@{A1 A2 CRelation Result}
   (A: Type@{A1})
-: LESignature.S :=
+: LESignature.S@{CRelation CRelation Result} :=
 {|
   LESignature.A := crelation@{A1 A2} A;
   LESignature.B := crelation@{A1 A2} A;
-  LESignature.C _ _ := Type@{CRelation};
+  LESignature.C _ _ := Type@{A2};
 |}.
 
 Definition crelation_no_match := try_second.
@@ -179,7 +180,7 @@ Canonical Structure unknown_crelation_le_signature@{A1 A2 CRelation C}
 Instance crelation_crelation_le@{Input Output CRelation Result} (A: Type@{Input})
 : LEOperation
     (LESignature.overload_branch
-      (crelation_crelation_le_signature@{Input Output CRelation} A)) :=
+      (crelation_crelation_le_signature@{Input Output CRelation Result} A)) :=
 fun (R S: crelation@{Input Output} A) =>
   CRelationClasses.subrelation@{Input Output Output} R S.
 
@@ -310,21 +311,22 @@ Instance nat_Z_add: AddOperation _ :=
 fun a b => (Z.of_nat a + b)%Z.
 
 Module TypeAddSignature.
-  Universe B C.
+  Universe C.
   #[universes(polymorphic)]
-  Structure S@{U} := {
+  Structure S@{A B} := {
     B: TaggedType@{B};
-    #[canonical=no] C: Type@{U} -> untag B -> Type@{C};
+    #[canonical=no] C: Type@{A} -> untag B -> Type@{C};
   }.
 End TypeAddSignature.
 
 Definition Type_no_match (B: TaggedType): Type := untag B.
 
+Universe Type_A.
 #[universes(polymorphic)]
-Canonical Structure Type_add_signature@{U} (sig2: TypeAddSignature.S)
-: AddSignature.S :=
+Canonical Structure Type_add_signature@{A B} (sig2: TypeAddSignature.S)
+: AddSignature.S@{Type_A B TypeAddSignature.C} :=
 {|
-  AddSignature.A := Type@{U};
+  AddSignature.A := Type@{A};
   AddSignature.B := Type_no_match (sig2.(TypeAddSignature.B));
   AddSignature.C := let '{| TypeAddSignature.C := C; |} := sig2 in C;
 |}.
@@ -339,15 +341,15 @@ Canonical Structure Type_any_add_branch@{U} (sig2: AddSignature.Any Type@{U})
 
 Module TypeBacktrackAddBranch.
   #[universes(polymorphic)]
-  Structure TypeBacktrackAddBranch@{U} := {
-    B: Type@{TypeAddSignature.B};
-    #[canonical=no] C: Type@{U} -> B -> Type@{TypeAddSignature.C};
+  Structure TypeBacktrackAddBranch@{A B} := {
+    B: Type@{B};
+    #[canonical=no] C: Type@{A} -> B -> Type@{TypeAddSignature.C};
   }.
 End TypeBacktrackAddBranch.
 Export TypeBacktrackAddBranch(TypeBacktrackAddBranch).
 
 #[universes(polymorphic)]
-Canonical Structure Type_overload_add_signature@{U} (sig2: TypeBacktrackAddBranch@{U})
+Canonical Structure Type_overload_add_signature@{A B} (sig2: TypeBacktrackAddBranch@{A B})
 : TypeAddSignature.S :=
 {|
   TypeAddSignature.B := try_first sig2.(TypeBacktrackAddBranch.B);
@@ -355,16 +357,17 @@ Canonical Structure Type_overload_add_signature@{U} (sig2: TypeBacktrackAddBranc
 |}.
 
 Set Warnings "-redundant-canonical-projection".
-Canonical Structure set_add_signature (sig2: TypeAddSignature.S@{Set})
-: AddSignature.S := Type_add_signature@{Set} sig2.
+#[universes(polymorphic)]
+Canonical Structure set_add_signature@{B} (sig2: TypeAddSignature.S@{Set B})
+: AddSignature.S := Type_add_signature@{Set B} sig2.
 Set Warnings "".
 
 #[universes(polymorphic)]
-Canonical Structure Type_Type_add_signature@{U}
-: TypeBacktrackAddBranch@{U} :=
+Canonical Structure Type_Type_add_signature@{A1 A2}
+: TypeBacktrackAddBranch@{A1 A2} :=
 {|
-  TypeBacktrackAddBranch.B := Type@{U};
-  TypeBacktrackAddBranch.C (A B: Type@{U}) := Type@{U};
+  TypeBacktrackAddBranch.B := Type@{A1};
+  TypeBacktrackAddBranch.C (A B: Type@{A1}) := Type@{A1};
 |}.
 
 #[export]
