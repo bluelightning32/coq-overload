@@ -38,12 +38,12 @@ Export NatLEOperation(NatLEOperation).
 Canonical Structure nat_le (op2: NatLEOperation)
 : LEOperation :=
 {|
-  LEOperation.A:= nat;
-  LEOperation.op:= op2.(NatLEOperation.op);
+  LEOperation.A := nat;
+  LEOperation.op := op2.(NatLEOperation.op);
 |}.
 
 Canonical Structure nat_nat_le: NatLEOperation := {|
-  NatLEOperation.B:= nat;
+  NatLEOperation.B := nat;
   NatLEOperation.op := Nat.le;
 |}.
 
@@ -59,7 +59,7 @@ Export ZLEOperation(ZLEOperation).
 Canonical Structure Z_le (op2: ZLEOperation)
 : LEOperation :=
 {|
-  LEOperation.op:= op2.(ZLEOperation.op);
+  LEOperation.op := op2.(ZLEOperation.op);
 |}.
 
 Canonical Structure Z_Z_le: ZLEOperation := {|
@@ -85,7 +85,7 @@ Export ListLEOperation(ListLEOperation).
 Canonical Structure list_le (A: Type) (op2: ListLEOperation A)
 : LEOperation :=
 {|
-  LEOperation.op:= op2.(ListLEOperation.op);
+  LEOperation.op := op2.(ListLEOperation.op);
 |}.
 
 Fixpoint lexicographical_le {A: Type} (le: A -> A -> Prop) (l1 l2: list A)
@@ -111,14 +111,14 @@ Export Comparison(Comparison).
 Canonical Structure nat_comparison
 : Comparison :=
 {|
-  Comparison.A:= nat;
+  Comparison.A := nat;
   Comparison.op := Nat.le;
 |}.
 
 Canonical Structure Z_comparison
 : Comparison :=
 {|
-  Comparison.A:= Z;
+  Comparison.A := Z;
   Comparison.op := Z.le;
 |}.
 
@@ -236,7 +236,7 @@ Canonical Structure nat_add (op2: NatAddOperation): AddOperation := {|
 |}.
 
 Canonical Structure nat_nat_add: NatAddOperation := {|
-  NatAddOperation.op:= Nat.add;
+  NatAddOperation.op := Nat.add;
 |}.
 
 Module ZAddOperation.
@@ -253,7 +253,7 @@ Canonical Structure Z_add (op2: ZAddOperation): AddOperation := {|
 |}.
 
 Canonical Structure Z_Z_add: ZAddOperation := {|
-  ZAddOperation.op:= Z.add;
+  ZAddOperation.op := Z.add;
 |}.
 
 Canonical Structure Z_nat_add: ZAddOperation := {|
@@ -298,7 +298,7 @@ Canonical Structure type_type_add@{U1}: TypeAddOperation@{U1} := {|
 Canonical Structure set_set_add: TypeAddOperation@{Set} := {|
   TypeAddOperation.B := Set;
   TypeAddOperation.C _ _ := Set;
-  TypeAddOperation.op a b:= (a + b)%type;
+  TypeAddOperation.op a b := (a + b)%type;
 |}.
 
 Definition add_nats (a b: nat) := a [+] b.

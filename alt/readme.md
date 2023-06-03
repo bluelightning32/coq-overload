@@ -115,17 +115,16 @@ runs as part of the unification algorithm, which runs early enough to pass the
 The `Structure` command is used to declare a record type. The canonical
 structures resolution algorithm can try to find instances of that record. It
 will only find record instances that are declared using the `Canonical
-Structure` command. The resolution algorithm is invoked when `v1 : h1 a1 a2 ..
-an` needs to be unified against `param_name : h2 a1 a2 ... an`. This typically
-occurs when `v1` is passed as an argument to a function that has `param_name`
-as a binder. The resolution only uses the head constant (`h1`) to find a
-matching canonical instance. However, that canonical instance can take
-parameters, which then also need to be solved by unification/canonical
-structures resolution.
+Structure` command. The resolution algorithm is invoked during function
+application. Roughly, when `v1 : h1 a1 a2 ... an` is applied to `f: forall
+(param: S.(h2) b1 b2 ... bn)` (that is `f v1`), then the resolution tries to
+find a value for `S` with hope that `h1 a1 a2 ... an` unifies with `S.(h2) b1
+b2 ... bn`.
 
-Declaring a canonical sturcture for the operation registers it as a problem
+Declaring a canonical structure for the operation registers it as a problem
 that can be solved with canonical structure resolution. Pointing the notation
-to that structure tells Coq when to use the canonical structure resolution.
+to that structure tells Coq to canonical structure resolution to determine the
+types and operation of the notation.
 ```
 Module LEOperation.
   Structure LEOperation := {
@@ -142,20 +141,25 @@ Definition le {o: LEOperation} := o.(LEOperation.op).
 Infix "<==" := le (at level 70, no associativity) : operation_scope.
 ```
 
-The resolution will look for an instance of `LEOperation` whose head constant
-of `A` matches the type of the first argument to `<==`. Notably, the resolution
-will typically ignore the `B`, `C`, and `op` fields. Of course unification
-looks at those fields, and will fail to accept the command if the canonical
-structure resolution picked the wrong instance.
+When the notation is used, unification will look for an instance `o` of type
+`LEOperation` whose head constant of `o.(A)` matches the type of the first
+argument to `<==`. Notably, unification always starts with the `A` field, which
+means that `o` is chosen without first checking whether fields `B`, `C`, and
+`op` match the notation. However, those fields are checked after the fact, and
+the type checking will fail if the fields do not match for the chosen `o`. With
+a naive implementation, `B` would be checked too late to allow overloading the
+notation's second argument.
 
-So the trick is to have canonical instances that only resolve the type of the
-first notation argument. However, picking the correct arguments for that
-instance then involves resolving the type of the second notation argument. In
-the below example, a branch is declared that accepts nat for the first
-argument. `nat_le` registers itself as a solution to the overload when the
-first type is a `nat`. `NatLEOperation` is declared as the problem of resolving
-the second argument when the first argument is a nat. `nat_le` takes a
-`NatLEOperation` as a parameter to link the two problems together.
+So the trick is to ensure that the canonical instances of `LEOperation` only
+resolve the first notation argument. However, that chosen `LEOperation`
+instance actually takes another canonical structure as a parameter. Resolving
+that parameter to the canonical structure also results in resolving the second
+argument of the notation overload.
+
+In the below example, `nat_le` is chosen when the first argument of the
+notation is a `nat`. However, `nat_le` takes a parameter `op2` of type
+`NatLEOperation`, which resolves the second argument of the notation, only
+after the first argument is already known to have type `nat`.
 ```
 Module NatLEOperation.
   Structure NatLEOperation := {
@@ -180,6 +184,48 @@ Canonical Structure nat_nat_le: NatLEOperation := {|
   NatLEOperation.B:= nat;
   NatLEOperation.op := Nat.le;
 |}.
+```
+
+As an example, let's walk through how
+`Definition compare_nats (a b: nat) := a <== b.` is type checked.
+1. The notation is parsed, and placeholders are added for implicit arguments:
+   `Definition compare_nats (m n: nat) : ?o.(LEOperation.C) m n := @le ?o m n.`
+2. `@le ?o m` is a function application. `@le ?o` has type `forall (a:
+   ?o.(LEOperation.A)), ...`, where the type of the `a` is a projection of a
+   canonical structure. So canonical structure resolution is invoked.
+3. `Print Canonical Projections.` reports `nat <- LEOperation.A ( nat_le )`. So
+   since `m` has type `nat` and it's being unified with the `LEOperation.A`
+   field of `?o`, `nat_le` is chosen for `?o`. With `?o` substituted, the new command is
+   `Definition compare_nats (m n: nat) : (nat_le ?op2).(LEOperation.C) m n  := @le (nat_le ?op2) m n.`
+4. `@le (nat_le ?op2) m n` is a function application. `@le (nat_le ?op2) m` has
+   type `forall (b: ?op2.(NatLEOperation.B)), ...`, where the type of the `b`
+   is a projection of a canonical structure. So canonical structure resolution
+   is invoked.
+5. `Print Canonical Projections.` reports
+   `nat <- NatLEOperation.B ( nat_nat_le )`. So since `n` has type `nat` and
+   it's being unified with the `NatLEOperation.B` field of `?op2`, `nat_nat_le`
+   is chosen for `?op2`. With `?op2` substituted, all of the unification
+   variables are resolved. The new command is:
+   `Definition compare_nats (m n: nat) : (nat_le nat_nat_le).(LEOperation.C) m n  := @le (nat_le nat_nat_le) m n.`
+
+Note that the resolution only uses the head constant to find a matching
+canonical instance. For example, the following canonical instance sets the
+`NatConsOperation.B` field to `list Z`. However, as shown by `Print Canonical
+Projections`, canonical structures resolution only uses the head constant,
+which is `list`.
+```
+Canonical Structure nat_list_Z_cons
+: NatConsOperation :=
+{|
+  NatConsOperation.B := list Z;
+  NatConsOperation.C _ _ := list Z;
+  NatConsOperation.op a := List.cons (Z.of_nat a);
+|}.
+
+(* Prints:
+   list <- NatConsOperation.B ( nat_list_Z_cons )
+ *)
+Print Canonical Projections.
 ```
 
 This canonical structures implemenation passes the `relations_reflexive` test
