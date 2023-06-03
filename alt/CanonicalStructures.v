@@ -1,5 +1,5 @@
-(* Fails cbn_keeps_le_notation, cbn_keeps_cons_notation, and
-   cbn_keeps_cons_notation'. *)
+(* Fails cbn_keeps_le_notation, cbn_keeps_add_notation, nat_add_0_r,
+   cbn_keeps_cons_notation, and cbn_keeps_cons_notation'. *)
 
 Require Import ZArith.
 Require Import List.
@@ -38,10 +38,12 @@ Export NatLEOperation(NatLEOperation).
 Canonical Structure nat_le (op2: NatLEOperation)
 : LEOperation :=
 {|
+  LEOperation.A:= nat;
   LEOperation.op:= op2.(NatLEOperation.op);
 |}.
 
 Canonical Structure nat_nat_le: NatLEOperation := {|
+  NatLEOperation.B:= nat;
   NatLEOperation.op := Nat.le;
 |}.
 
@@ -342,6 +344,19 @@ Proof.
   progress cbn.
   reflexivity.
 Qed.
+
+Theorem nat_add_comm: forall (m n: nat), m [+] n = n [+] m.
+Proof.
+  apply Nat.add_comm.
+Qed.
+
+(* Fails *)
+Theorem nat_add_0_r : forall (n: nat), n [+] 0 = n.
+Proof.
+  intros.
+  (* Ideally this would work. *)
+  Fail rewrite nat_add_comm.
+Abort.
 
 Theorem nat_le_reflexive: forall (n: nat), n <== n.
 Proof.

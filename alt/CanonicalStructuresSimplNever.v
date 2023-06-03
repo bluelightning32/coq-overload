@@ -1,4 +1,4 @@
-(* Fails cbn_simplifies_addition. *)
+(* Fails cbn_simplifies_addition and nat_add_0_r. *)
 
 Require Import ZArith.
 Require Import List.
@@ -343,8 +343,24 @@ Proof.
   intros.
   (* Ideally this would pass. *)
   Fail progress cbn.
+  (* Simpl does simplify, but it also strips off the [+] notation on both
+     sides. Afterwards the goal is: S (a + b) = S (a + b). *)
+  simpl.
   reflexivity.
 Qed.
+
+Theorem nat_add_comm: forall (m n: nat), m [+] n = n [+] m.
+Proof.
+  apply Nat.add_comm.
+Qed.
+
+(* Fails *)
+Theorem nat_add_0_r : forall (n: nat), n [+] 0 = n.
+Proof.
+  intros.
+  (* Ideally this would work. *)
+  Fail rewrite nat_add_comm.
+Abort.
 
 Theorem nat_le_reflexive: forall (n: nat), n <== n.
 Proof.

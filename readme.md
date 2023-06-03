@@ -45,9 +45,9 @@ To show the flexiblity of this library, the following overloads are defined in
 | `nat`           | `[::]`         | `list Z`         | `list Z`    | `List.cons (Z.of_nat a) b` |
 | `?A`            | `[::]`         | `Ensemble ?A`    | `Ensemble ?A` | `Ensembles.Add _ b a` |
 
-`Example/Example.v` includes the final library. The `Alt` directory shows the
+`Example/Example.v` includes the final library. The `alt` directory shows the
 evolution of the internals of the library through simpler attempts fail in some
-way. [Alt/readme.md](Alt/readme.md) uses this evolution to explain the
+way. [alt/readme.md](alt/readme.md) uses this evolution to explain the
 internals of the final library.
 
 The rest of this file serves as a guide on how to use the library rather than

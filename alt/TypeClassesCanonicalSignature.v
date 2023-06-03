@@ -397,6 +397,8 @@ Proof.
   intros.
   (* Ideally this would work. *)
   Fail rewrite nat_add_comm.
+  (* It does work when both arguments are explictly specified. *)
+  rewrite nat_add_comm with (m:= n) (n:= 0).
 Abort.
 
 Theorem nat_le_reflexive: forall (n: nat), n <== n.

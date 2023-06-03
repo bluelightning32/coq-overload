@@ -126,7 +126,9 @@ Fail Definition crelations_reflexive (A: Type)
 Theorem cbn_keeps_le_notation: forall (a b: nat), (a <== b) = (a <== b).
 Proof.
   intros.
+  (* Goal is now: (a <== b) = (a <== b) *)
   cbn.
+  (* Goal is now: Nat.le a b = Nat.le a b *)
   Fail match goal with
   | |- context [a <== b] => idtac
   end.

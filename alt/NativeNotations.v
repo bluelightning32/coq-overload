@@ -24,7 +24,7 @@ Declare Scope ensemble_op_scope.
 Delimit Scope ensemble_op_scope with ensemble_op.
 Open Scope ensemble_op_scope.
 
-Infix "<==" := Z.le (at level 70, no associativity) : Z_op_scope.
+Infix "<==" := Z.le : Z_op_scope.
 
 Definition compare_nats (a b: nat) := (a <== b)%nat_op.
 
