@@ -1,5 +1,6 @@
 (* Fails cbn_keeps_le_notation, cbn_keeps_add_notation, nat_add_0_r,
-   cbn_keeps_cons_notation, and cbn_keeps_cons_notation'. *)
+   list_in_cons_nat_alias_Z, list_in_cons_nat_nat, cbn_keeps_cons_notation, and
+   cbn_keeps_cons_notation'. *)
 
 Require Import ZArith.
 Require Import List.
@@ -495,6 +496,14 @@ Proof.
   left.
   reflexivity.
 Qed.
+
+Definition nat_alias := nat.
+
+Fail Theorem list_in_cons_nat_alias_Z
+: forall (a: nat_alias) (l: list Z), List.In (Z.of_nat a) (a [::] l).
+
+Fail Theorem list_in_cons_nat_nat
+: forall (a: nat) (l: list nat), List.In a (a [::] l).
 
 Theorem ensemble_in_cons
 : forall A (a: A) (e: Ensemble A), Ensembles.In _ (a [::] e) a.
