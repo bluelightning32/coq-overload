@@ -235,7 +235,7 @@ that passed with the definitional type class design.
 ## Canonical structures with simplification blocked
 
 The previous canonical structures design simplified the notation too easily.
-This can be solved by marking the output type (`C`) and the operation (`op`) as
+This can be solved by marking the output type `C` and the operation `op` as
 never simplifiable.
 ```
 Module LEOperation.
