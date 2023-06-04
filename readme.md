@@ -29,7 +29,7 @@ To show the flexiblity of this library, the following overloads are defined in
 | nat             | <==            | nat              | Prop        | Nat.le    |
 | Z               | <==            | Z                | Prop        | Z.le      |
 | Z               | <==            | nat              | Prop        | (a <= Z.of_nat b)%Z |
-| list ?A         | <==            | list ?A          | Prop        | lexicographical comparison |
+| list ?A         | <==            | list ?A          | Prop        | lexicographical_le |
 | relation ?A     | <==            | `?` unified to `relation ?A` | Prop      | RelationClasses.subrelation |
 | `?` unified to `relation ?A` | <== | relation ?A    | Prop        | RelationClasses.subrelation |
 | crelation ?A    | <==            | `?` unified to `crelation ?A` | Type      | CRelationClasses.subrelation |
