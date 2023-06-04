@@ -4,7 +4,7 @@ This document describes the eovlution of the Overload library as a way to
 document its internal implementation. It especially describes why such a
 complicated implementation is necessary.
 
-Most sections of this document correspond to one of the .v files in the
+Each section of this document corresponds to one of the .v files in this
 directory.
 
 ## Native notations
@@ -342,4 +342,165 @@ Proof.
   rewrite nat_add_comm.
   reflexivity.
 Qed.
+```
+
+This design stilll has a problem. The problem is shared will all previous
+canonical structure based designs. To explain the problem, first the cons
+notation needs to be explained. The following two overloads are enough to
+demonstrate the problem.
+
+| First argument  | Infix operator | Second argument  | Result type | Operation |
+| --------------- | -------------- | ---------------- | ----------- | --------- |
+| `?A`            | `[::]`         | `list ?A`        | `list ?A`   | `List.cons` |
+| `nat`           | `[::]`         | `list Z`         | `list Z`    | `List.cons (Z.of_nat a) b` |
+
+If the type of the first argument matches the type of the list, then the first
+overload should be used. If the first argument is a `nat` and the second
+argument is a `list Z`, then the second overload should be used. Note that
+`nat [::] list nat` should use the first overload.
+
+The type of the first argument could be anything. Declaring a new canonical
+instance for every possible type would be too tedious. Instead a special
+canonical instance is used that acts like a wildcard. The wildcard behavior is
+engaged by setting a field equal to a parameter of the instance. Below,
+`ConsSignature.A` is a wildcard field, because it is set to the `A` parameter.
+```
+Canonical Structure any_cons (A: Type) (op2: AnyConsSignature A)
+: ConsSignature :=
+{|
+  ConsSignature.A := A;
+  ConsSignature.C := op2.(AnyConsSignature.C);
+|}.
+```
+
+`Print Canonical Projections` shows the wildcard as `_`.
+```
+(* Prints: _ <- ConsSignature.A ( any_cons ) *)
+Print Canonical Projections.
+```
+
+The first argument is also overloaded differently when it is a `nat`.
+```
+Canonical Structure nat_cons_signature (op2: NatConsSignature)
+: ConsSignature :=
+{|
+  ConsSignature.A := nat;
+  ConsSignature.C := op2.(NatConsSignature.C);
+|}.
+```
+
+So the canonical structures resolution has to decide whether to take the
+`nat_cons_signature` branch (that can only accept `nat`) or the wildcard branch
+(that can accept everything). The `nat_cons_signature` branch takes precedence
+when the type of the first argument is syntactically equal to `nat`. However,
+there are two cases where the wrong branch is taken.
+
+One case is for the `nat [::] list nat` overload. The `nat_cons_signature`
+branch is taken. However, the only `NatConsSignature` instance takes a `list Z`
+as the second argument (not `list nat`). The unification algorithm does not
+backtrack and change to the `any_cons` branch. Instead it just fails:
+```
+(* Fails with:
+    The term "l" has type "list nat" while it is expected to have type
+     "ConsSignature.B (nat_cons_signature ?n)".
+*)
+Fail Theorem list_in_cons_nat_nat
+: forall (a: nat) (l: list nat), List.In a (a [::] l).
+```
+
+It would be possible to solve this by adding a `NatConsSignature` instance that
+takes a `list nat` and redirects back to the correct `AnyConsSignature`
+instance. However, this gets tedious if more notation overload are added that
+take a wildcard for the first argument and something else for the second
+argument, such as `?A [::] Ensemble ?A`.
+
+The second case where the wrong branch is taken is when the first argument has
+a type that is an alias of `nat`. The type is convertible to `nat`, but it is
+not syntactically equaly to `nat`. So the `any_cons` branch is incorrectly
+taken. The canonical structure resolution fails instead of backtracking.
+```
+Definition nat_alias := nat.
+
+(* Fails with:
+    The term "l" has type "list Z" while it is expected to have type
+     "ConsSignature.B (any_cons nat_alias ?a)".
+*)
+Fail Theorem list_in_cons_nat_alias_Z
+: forall (a: nat_alias) (l: list Z), List.In (Z.of_nat a) (a [::] l).
+```
+
+## Type classes and canonical structures with tagging
+
+This approach uses "tagging" from
+[How to make ad hoc proof automation less ad hoc](https://dl.acm.org/doi/10.1145/2034773.2034798)
+to provide more control over how the canonical structures resolution fallsback
+from the branch for a specific type to the wildcard branch.
+
+`TaggedType` is basically a wrapper around `Type`. It has exactly one field,
+called `untag`, which is the wrapped type. The reason its constructor is called
+`try_second` will be explained shortly.
+```
+#[universes(polymorphic)]
+Structure TaggedType@{U} := try_second {
+  untag: Type@{U};
+}.
+```
+
+Only one canonical instance for `TaggedType` is defined. The canonical instance
+is called `try_first`, and it is an alias for the real constructor,
+`try_second`. When `a : T` needs to be unified against `b : untag ?U`, the
+canonical structure resolution will first try to set `?U` to `try_first T`,
+replacing the first expression with `a : untag (try_first T)`. Later if the
+canonical structure resolution fails on `untag (try_first T)`, unification will
+go back and unfold `try_first` to replace the original expression with
+`a : untag (try_second T)`, then try canonical structure resolution again.
+Hence, the reason for the names `try_first` and `try_second`.
+```
+Canonical Structure try_first (A: Type) := try_second A.
+```
+
+A tagged type is used for the first argument of the signature to solve the
+`list_in_cons_nat_alias_Z` problem. Unification will unfold `nat_alias` to
+`nat` and try the primary branch again. If it failed after unfolding (it
+succeeds in the case of `list_in_cons_nat_alias_Z`), then only then it would
+fallback to the wildcard `try_second` branch.
+```
+Module LESignature.
+  Structure LESignature := {
+    A: TaggedType;
+    B: Type;
+    #[canonical=no] C: untag A -> B -> Type;
+  }.
+  Arguments C : simpl never.
+End LESignature.
+Export LESignature(LESignature).
+```
+
+The signatures that determine the notation's second argument also use tagged
+types.
+```
+Module NatLESignature.
+  Structure NatLESignature := {
+    B: TaggedType;
+    #[canonical=no] C: nat -> untag B -> Type;
+  }.
+End NatLESignature.
+Export NatLESignature(NatLESignature).
+```
+
+The overloaded signatures use tagged types so that they can first look for a
+fully resolved overload (matches the type of the first argument and the type of
+second argument). If that fails, it can fallback to using the wildcard branch
+for the first argument (`nat_any_le_branch` does the fallback in the example
+below). Tagged types are necessary for this fallback, because the standard
+canonical structures wildcard can only be used to match everything, whereas
+here it only matches type that are the second argument of a wildcard branch
+from the first argument (`sig2.(AnyLESignature.B)` in the example below.
+```
+Canonical Structure nat_any_le_branch (sig2: AnyLESignature nat)
+: NatLESignature :=
+{|
+  NatLESignature.B := try_second sig2.(AnyLESignature.B);
+  NatLESignature.C := let '{| AnyLESignature.C := C; |} := sig2 in C;
+|}.
 ```
