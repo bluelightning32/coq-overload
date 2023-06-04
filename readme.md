@@ -235,7 +235,7 @@ If the first argument is a wildcard, then use the `Any` branch instead of the
 
 | First argument  | Infix operator | Second argument  | Result type | Operation |
 | --------------- | -------------- | ---------------- | ----------- | --------- |
-| `?A`            | `[::]`         | `list ?A`        | `list ?A`   | `List.cons` |
+| ?A              | [::]           | list ?A          | list ?A     | List.cons |
 
 First declare the signature for the overload. In the below example, replace
 `list` with the type of the second argument, `cons` with the operator name,
@@ -375,8 +375,8 @@ chosen).
 
 | First argument  | Infix operator | Second argument  | Result type | Operation |
 | --------------- | -------------- | ---------------- | ----------- | --------- |
-| `Z`             | `<==`          | `Z`              | `Prop`      | `Z.le`    |
-| `Z`             | `<==`          | `nat`            | `Prop`      | `(a <= Z.of_nat b)%Z` |
+| Z               | <==            | Z                | Prop        | Z.le      |
+| Z               | <==            | nat              | Prop        | (a <= Z.of_nat b)%Z |
 
 First declare the signature. In the following example, replace `le` and `LE`
 with name of the operator. Replace `relation` with the type of the first and
@@ -653,7 +653,7 @@ build it along with your project.
 
 ## Licensing
 
-The Overload library is mostly documentation and examples. The examples are
-intended to be copied used as templates for overloads within your project. It
-is licensed with 0BSD so that the examples can be copied into your project
-without having to add a copyright notice pointing back to Overload.
+The Overload library consists of mostly documentation and examples. The
+examples are intended to used as templates within your project. The library is
+licensed with 0BSD so that the examples can be copied into your project without
+having to add a copyright notice pointing back to Overload.
