@@ -6,8 +6,7 @@ This project provides overloadable notations in Coq. Declaring a notation as
 overloadable only attaches the bare minimum semantics to the notation:
 * Notation symbol
 * Notation precedence
-* Associativity for parsing the notation (not necessarily the same as the
-  associativity of the operation that the overload actually performs)
+* Right/left/none associativity for parsing the notation
 * Coq notation scope
 
 The goal is that after a notation has been declared as overloadable, its
@@ -27,23 +26,23 @@ To show the flexiblity of this library, the following overloads are defined in
 
 | First argument  | Infix operator | Second argument  | Result type | Operation |
 | --------------- | -------------- | ---------------- | ----------- | --------- |
-| `nat`           | `<==`          | `nat`            | `Prop`      | `Nat.le`  |
-| `Z`             | `<==`          | `Z`              | `Prop`      | `Z.le`    |
-| `Z`             | `<==`          | `nat`            | `Prop`      | `(a <= Z.of_nat b)%Z` |
-| `list ?A`       | `<==`          | `list ?A`        | `Prop`      | lexicographical comparison |
-| `relation ?A`   | `<==`          | `?` unified to `relation ?A` | `Prop`      | `RelationClasses.subrelation` |
-| `?` unified to `relation ?A` | `<==`          | `relation ?A` | `Prop`      | `RelationClasses.subrelation` |
-| `crelation ?A`   | `<==`          | `?` unified to `crelation ?A` | `Type`      | `CRelationClasses.subrelation` |
-| `?` unified to `crelation ?A` | `<==`          | `crelation ?A` | `Type`      | `CRelationClasses.subrelation` |
-| `nat`           | `[+]`          | `nat`            | `nat`       | `Nat.add` |
-| `Z`             | `[+]`          | `Z`              | `Z`         | `Z.add`   |
-| `Z`             | `[+]`          | `nat`            | `Z`         | `(a + Z.of_nat b)%Z` |
-| `nat`           | `[+]`          | `Z`              | `Z`         | `(Z.of_nat a + b)%Z` |
-| `Type`          | `[+]`          | `Type`           | `Type`      | `sum`     |
-| `Set`           | `[+]`          | `Set`            | `Set`       | `sum`     |
-| `?A`            | `[::]`         | `list ?A`        | `list ?A`   | `List.cons` |
-| `nat`           | `[::]`         | `list Z`         | `list Z`    | `List.cons (Z.of_nat a) b` |
-| `?A`            | `[::]`         | `Ensemble ?A`    | `Ensemble ?A` | `Ensembles.Add _ b a` |
+| nat             | <==            | nat              | Prop        | Nat.le    |
+| Z               | <==            | Z                | Prop        | Z.le      |
+| Z               | <==            | nat              | Prop        | (a <= Z.of_nat b)%Z |
+| list ?A         | <==            | list ?A          | Prop        | lexicographical comparison |
+| relation ?A     | <==            | `?` unified to `relation ?A` | Prop      | RelationClasses.subrelation |
+| `?` unified to `relation ?A` | <== | relation ?A    | Prop        | RelationClasses.subrelation |
+| crelation ?A    | <==            | `?` unified to `crelation ?A` | Type      | CRelationClasses.subrelation |
+| `?` unified to `crelation ?A` | <== | crelation ?A  | Type        | CRelationClasses.subrelation |
+| nat             | [+]            | nat              | nat         | Nat.add   |
+| Z               | [+]            | Z                | Z           | Z.add     |
+| Z               | [+]            | nat              | Z           | (a + Z.of_nat b)%Z |
+| nat             | [+]            | Z                | Z           | (Z.of_nat a + b)%Z |
+| Type            | [+]            | Type             | Type        | sum       |
+| Set             | [+]            | Set              | Set         | sum       |
+| ?A              | [::]           | list ?A          | list ?A     | List.cons |
+| nat             | [::]           | list Z           | list Z      | List.cons (Z.of_nat a) b |
+| ?A              | [::]           | Ensemble ?A      | Ensemble ?A | Ensembles.Add _ b a |
 
 `Example/Example.v` includes the final library. The `alt` directory shows the
 evolution of the internals of the library through simpler attempts fail in some
